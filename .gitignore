@@ -1,0 +1,24 @@
+# Supplied local documents
+/regime_aware_dynamic_asset_class_allocation_mvp_brief.md
+/skills.md
+
+# Local Python environment and credentials
+/.venv/
+.env
+.env.*
+*.env
+.envrc
+.python-version
+
+# Python caches and generated packaging files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Local editor state
+/.vscode/
