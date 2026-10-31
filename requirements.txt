@@ -1,5 +1,6 @@
 # Tested with CPython 3.12.14 on Windows x86-64; pip 25.0.1.
 # Direct and transitive runtime dependencies are pinned.
+# exchange-calendars provides historical exchange holidays and close times.
 # Install: .venv\Scripts\python.exe -m pip install --no-cache-dir -r requirements.txt
 beautifulsoup4==4.15.0
 certifi==2026.10.23
@@ -11,6 +12,7 @@ contourpy==1.4.0
 curl_cffi==0.17.0
 cvxpy==1.9.3
 cycler==0.12.1
+exchange_calendars==4.13.2
 fonttools==4.68.0
 fredapi==0.5.2
 highspy==1.15.1
@@ -19,6 +21,7 @@ idna==3.20
 Jinja2==3.1.6
 joblib==1.6.0
 kiwisolver==1.5.1
+korean_lunar_calendar==0.4.0
 lxml==6.1.3
 MarkupSafe==3.0.4
 matplotlib==3.11.2
@@ -33,6 +36,7 @@ pillow==13.0.0
 platformdirs==4.14.0
 protobuf==7.36.2
 pycparser==3.12
+pyluach==2.3.0
 pyparsing==3.3.3
 python-dateutil==3.0.0
 pytz==2026.6
@@ -46,6 +50,7 @@ six==1.17.0
 soupsieve==3.0.4
 sparsediffpy==0.6.1
 threadpoolctl==3.7.0
+toolz==1.2.0
 typing_extensions==4.16.0
 tzdata==2026.6
 urllib3==2.8.0

@@ -22,11 +22,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
-OUTPUT_DIR = PROJECT_ROOT / "outputs"
+OUTPUT_DIR = PROJECT_ROOT / "results"
 SELECTION_DIR = OUTPUT_DIR / "selection"
 LOCKED_TEST_DIR = OUTPUT_DIR / "locked_test"
 FIGURES_DIR = OUTPUT_DIR / "figures"
 SEED_MAPPING_PATH = OUTPUT_DIR / "seed_mapping.jsonl"
+RETRIEVAL_MANIFEST_PATH = OUTPUT_DIR / "retrieval_manifest.json"
+PREPARED_PATHS = MappingProxyType(
+    {name: PROCESSED_DATA_DIR / f"{name}.csv" for name in (
+        "calendar", "adjusted_prices", "weekly_returns", "macro_predictors",
+        "macro_availability", "features", "targets",
+    )}
+)
 
 FRED_API_KEY_ENV = "FRED_API_KEY"
 MARKET_DATA_SOURCE = "Yahoo Finance"
@@ -39,6 +46,33 @@ MACRO_CHANGE_METHODS = MappingProxyType(
     {"VIXCLS": "difference", "T10Y2Y": "difference", "PPIACO": "pct_change"}
 )
 PRICE_AUTO_ADJUST = True
+MARKET_CALENDAR = "XNYS"
+MARKET_TIMEZONE = "America/New_York"
+REGULAR_CLOSE_HOUR = 16
+CALENDAR_BUFFER_DAYS = 10
+MACRO_OBSERVATION_START = date(2014, 1, 1)
+MACRO_AVAILABILITY_RULE = "next local midnight after the ALFRED vintage date"
+MACRO_AVAILABILITY_DELAY_DAYS = 1
+MACRO_AVAILABILITY_TIMEZONE = MARKET_TIMEZONE
+HTTP_TIMEOUT_SECONDS = 30
+HTTP_USER_AGENT = "Mozilla/5.0 (compatible; personal academic research)"
+FRED_API_BASE = "https://api.stlouisfed.org/fred/"
+FRED_VINTAGE_CHUNK_YEARS = 3
+FRED_PAGE_LIMIT = 100000
+FRED_VINTAGE_DATE_LIMIT = 10000
+YAHOO_CHART_BASE = "https://query1.finance.yahoo.com/v8/finance/chart/"
+YAHOO_CHART_PARAMETERS = MappingProxyType(
+    {"interval": "1d", "events": "div,splits,capitalGains", "includeAdjustedClose": "true"}
+)
+SOURCE_TERMS = MappingProxyType(
+    {
+        "yahoo_terms": "https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html",
+        "yahoo_finance_terms": "https://legal.yahoo.com/us/en/yahoo/terms/product-atos/finance/index.html",
+        "fred_terms": "https://fred.stlouisfed.org/docs/api/terms_of_use.html",
+        "alfred_availability": "https://alfred.stlouisfed.org/help",
+    }
+)
+SOURCE_TERMS_REVIEWED_ON = date(2026, 10, 31)
 
 RESEARCH_START = date(2014, 7, 28)
 WEEKS_PER_YEAR = 52
@@ -47,7 +81,6 @@ DAYS_PER_WEEK = 7
 FIRST_RETURN_PRICE_BOUNDARY = RESEARCH_START - timedelta(days=3)
 DECISION_WEEKDAY = 4  # Friday; Monday is zero.
 EXECUTION_DELAY_DAYS = 3  # Following Monday, before holiday adjustment.
-MARKET_TIMEZONE = "America/New_York"
 DECISION_CUTOFF_RULE = "latest available trading close by Friday"
 EXECUTION_RULE = "Monday close, or next trading close on a market holiday"
 TARGET_ENDPOINT_RULE = "execution close to trading close four weeks later"

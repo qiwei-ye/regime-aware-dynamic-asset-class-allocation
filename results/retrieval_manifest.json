@@ -1,0 +1,865 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "generated_at_utc": "2026-10-31T08:39:07.229040+00:00",
+  "retrievals": [
+    {
+      "source_id": "yahoo_terms",
+      "url": "https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html",
+      "parameters": {},
+      "retrieved_at_utc": "2026-10-31T08:10:37.334099+00:00",
+      "http_status": 200,
+      "sha256": "4bcdd5402dcb56638165e1566de0c6a980b31a42eb3ab7ff092e1f9dacb2a257",
+      "bytes": 167945,
+      "local_snapshot": "data/raw/yahoo_terms_4edc40bc9419df38.html",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "yahoo_finance_terms",
+      "url": "https://legal.yahoo.com/us/en/yahoo/terms/product-atos/finance/index.html",
+      "parameters": {},
+      "retrieved_at_utc": "2026-10-31T08:10:37.637606+00:00",
+      "http_status": 200,
+      "sha256": "189c5b83145a7afbcc4dab999f894ebdcaddcabf14f8c1a76475548223c4957f",
+      "bytes": 45776,
+      "local_snapshot": "data/raw/yahoo_finance_terms_f6c783b3aac59820.html",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "yahoo_VT",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/VT",
+      "parameters": {
+        "interval": "1d",
+        "events": "div,splits,capitalGains",
+        "includeAdjustedClose": "true",
+        "period1": 1406260800,
+        "period2": 1786420800
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:50.365435+00:00",
+      "http_status": 200,
+      "sha256": "85f64c50f8678ad06520d6463f69eaface64dc61edffb9417eb05fb82167f598",
+      "bytes": 328262,
+      "local_snapshot": "data/raw/yahoo_VT_f1c067c8a24d5bbf.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "yahoo_IEF",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/IEF",
+      "parameters": {
+        "interval": "1d",
+        "events": "div,splits,capitalGains",
+        "includeAdjustedClose": "true",
+        "period1": 1406260800,
+        "period2": 1786420800
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:50.575747+00:00",
+      "http_status": 200,
+      "sha256": "08a2ca0744594ade1e4e2ecbf0aed15ab02bb3a3bbc315249554fb7a73af3a94",
+      "bytes": 337553,
+      "local_snapshot": "data/raw/yahoo_IEF_2d817825fedf6d19.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "yahoo_LQD",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/LQD",
+      "parameters": {
+        "interval": "1d",
+        "events": "div,splits,capitalGains",
+        "includeAdjustedClose": "true",
+        "period1": 1406260800,
+        "period2": 1786420800
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:50.795025+00:00",
+      "http_status": 200,
+      "sha256": "14d892dccb6b94034c54e119752fdf6808d8691b733ddccf4fecc749dcf09999",
+      "bytes": 343239,
+      "local_snapshot": "data/raw/yahoo_LQD_aabaa8c6207625d8.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "yahoo_VNQ",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/VNQ",
+      "parameters": {
+        "interval": "1d",
+        "events": "div,splits,capitalGains",
+        "includeAdjustedClose": "true",
+        "period1": 1406260800,
+        "period2": 1786420800
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:51.005337+00:00",
+      "http_status": 200,
+      "sha256": "6aaef99473518ce45802856b5693432b193fd7e80b81178cea7ab6588f172650",
+      "bytes": 325417,
+      "local_snapshot": "data/raw/yahoo_VNQ_8bf1d0329caf11fd.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "yahoo_DBC",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/DBC",
+      "parameters": {
+        "interval": "1d",
+        "events": "div,splits,capitalGains",
+        "includeAdjustedClose": "true",
+        "period1": 1406260800,
+        "period2": 1786420800
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:51.171795+00:00",
+      "http_status": 200,
+      "sha256": "7c8e1662024a4eb04cb9c58597da2b549f09a4e3efc8b0ade7bcea656f4e8bed",
+      "bytes": 334224,
+      "local_snapshot": "data/raw/yahoo_DBC_3ba040dd7a7a45f6.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "yahoo_BIL",
+      "url": "https://query1.finance.yahoo.com/v8/finance/chart/BIL",
+      "parameters": {
+        "interval": "1d",
+        "events": "div,splits,capitalGains",
+        "includeAdjustedClose": "true",
+        "period1": 1406260800,
+        "period2": 1786420800
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:51.367156+00:00",
+      "http_status": 200,
+      "sha256": "e270ba2120ef37fe73abe8ee932fc673ea7e486261fdda50f436de50bd291a56",
+      "bytes": 323347,
+      "local_snapshot": "data/raw/yahoo_BIL_13e275c1ad2d58e3.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_VIXCLS_series",
+      "url": "https://api.stlouisfed.org/fred/series",
+      "parameters": {
+        "series_id": "VIXCLS",
+        "file_type": "json"
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:51.637267+00:00",
+      "http_status": 200,
+      "sha256": "e75d99841fa60e7e21f53085c4f22b91ba27af1d384d438fe469ad0153435649",
+      "bytes": 657,
+      "local_snapshot": "data/raw/alfred_VIXCLS_series_8dcbe0afc9caaa9f.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_VIXCLS_series_release",
+      "url": "https://api.stlouisfed.org/fred/series/release",
+      "parameters": {
+        "series_id": "VIXCLS",
+        "file_type": "json"
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:51.928814+00:00",
+      "http_status": 200,
+      "sha256": "ea493a8625637658f9e6a627335d52a0ff598d6166b13a71c262d6a57884543b",
+      "bytes": 246,
+      "local_snapshot": "data/raw/alfred_VIXCLS_series_release_c5a150eabd02d0c3.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_VIXCLS_series_vintagedates",
+      "url": "https://api.stlouisfed.org/fred/series/vintagedates",
+      "parameters": {
+        "series_id": "VIXCLS",
+        "file_type": "json",
+        "realtime_start": "2014-01-01",
+        "realtime_end": "2026-07-10",
+        "limit": 10000,
+        "sort_order": "asc"
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:52.235356+00:00",
+      "http_status": 200,
+      "sha256": "e8551e77d35bb5a9731b2c62e34b5a80a3b44107f87b4b1720b1a4de7816f80d",
+      "bytes": 40915,
+      "local_snapshot": "data/raw/alfred_VIXCLS_series_vintagedates_b8c5cb3c0db044e2.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_VIXCLS_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "VIXCLS",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2014-01-01",
+        "realtime_end": "2016-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:52.488096+00:00",
+      "http_status": 200,
+      "sha256": "b9c90eea41540353b2df743bcc3e03fa172c33b159488cc8a9cad54abd77900d",
+      "bytes": 75240,
+      "local_snapshot": "data/raw/alfred_VIXCLS_series_observations_75cea0c33dc4e30b.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_VIXCLS_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "VIXCLS",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2017-01-01",
+        "realtime_end": "2019-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:52.799577+00:00",
+      "http_status": 200,
+      "sha256": "8e92dd42a7084c1b6eb47808a8d7e1b4e0ff702d3b9e00e3ff52a322b2b2d151",
+      "bytes": 150176,
+      "local_snapshot": "data/raw/alfred_VIXCLS_series_observations_3b6e75caf501efb6.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_VIXCLS_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "VIXCLS",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2020-01-01",
+        "realtime_end": "2022-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:53.074181+00:00",
+      "http_status": 200,
+      "sha256": "87b55e67eeb49ac3bbf91103879fdc066f0780b868d21a8c7017a95c18555682",
+      "bytes": 225468,
+      "local_snapshot": "data/raw/alfred_VIXCLS_series_observations_03f05f20f680dd28.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_VIXCLS_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "VIXCLS",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2023-01-01",
+        "realtime_end": "2025-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:53.477898+00:00",
+      "http_status": 200,
+      "sha256": "4190728774cac3647ecc36098ea853c88ce35175d269714b271216781d23ef97",
+      "bytes": 300510,
+      "local_snapshot": "data/raw/alfred_VIXCLS_series_observations_107e0622871ffb5c.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_VIXCLS_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "VIXCLS",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2026-01-01",
+        "realtime_end": "2026-07-10",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:53.738042+00:00",
+      "http_status": 200,
+      "sha256": "a1c554ce0eb60365e2e05940b0be49ed4fd6e5888ecac2bb2c980d212397f0c4",
+      "bytes": 313359,
+      "local_snapshot": "data/raw/alfred_VIXCLS_series_observations_593814e36339efae.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_T10Y2Y_series",
+      "url": "https://api.stlouisfed.org/fred/series",
+      "parameters": {
+        "series_id": "T10Y2Y",
+        "file_type": "json"
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:53.969788+00:00",
+      "http_status": 200,
+      "sha256": "4e8e4045a739c5794e11f1fd8351e2788c892c3bfe39078e509f0e2250019cea",
+      "bytes": 1125,
+      "local_snapshot": "data/raw/alfred_T10Y2Y_series_0fe3179f06aae3a1.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_T10Y2Y_series_release",
+      "url": "https://api.stlouisfed.org/fred/series/release",
+      "parameters": {
+        "series_id": "T10Y2Y",
+        "file_type": "json"
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:54.184087+00:00",
+      "http_status": 200,
+      "sha256": "d916917a5ac52b16a5e2c585d3267553b9428ce6770614ec1930fe3dbf2473dc",
+      "bytes": 194,
+      "local_snapshot": "data/raw/alfred_T10Y2Y_series_release_03c0b43c75eb0a65.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_T10Y2Y_series_vintagedates",
+      "url": "https://api.stlouisfed.org/fred/series/vintagedates",
+      "parameters": {
+        "series_id": "T10Y2Y",
+        "file_type": "json",
+        "realtime_start": "2014-01-01",
+        "realtime_end": "2026-07-10",
+        "limit": 10000,
+        "sort_order": "asc"
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:54.649560+00:00",
+      "http_status": 200,
+      "sha256": "a310186441b355b796b063a6dc6064d0e753b0e81f420bf6808ea8c5ec0a0a54",
+      "bytes": 40135,
+      "local_snapshot": "data/raw/alfred_T10Y2Y_series_vintagedates_1e75ab769f3ac819.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_T10Y2Y_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "T10Y2Y",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2014-01-01",
+        "realtime_end": "2016-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:54.923166+00:00",
+      "http_status": 200,
+      "sha256": "2b948851f78aecb7e28d8e1e0ac5293e8c61f236deef2210334fa1482982c351",
+      "bytes": 74470,
+      "local_snapshot": "data/raw/alfred_T10Y2Y_series_observations_f644746260e97b73.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_T10Y2Y_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "T10Y2Y",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2017-01-01",
+        "realtime_end": "2019-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:55.725545+00:00",
+      "http_status": 200,
+      "sha256": "6c71c20cefc70816c98d4e52d8576dee77e40bc9b2650e77e49d989a82d97b13",
+      "bytes": 148899,
+      "local_snapshot": "data/raw/alfred_T10Y2Y_series_observations_d00641e99f1b2c6d.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_T10Y2Y_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "T10Y2Y",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2020-01-01",
+        "realtime_end": "2022-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:56.062017+00:00",
+      "http_status": 200,
+      "sha256": "0a272f619e4e62ff1eaa1334a781861313fdc9ab2b823091daf944b90e08e2ca",
+      "bytes": 223253,
+      "local_snapshot": "data/raw/alfred_T10Y2Y_series_observations_80c0006d108bbee1.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_T10Y2Y_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "T10Y2Y",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2023-01-01",
+        "realtime_end": "2025-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:56.776702+00:00",
+      "http_status": 200,
+      "sha256": "83148d34f24311c395936776f18aa212b77d1cfc88af67f3d68cdae1e64066ad",
+      "bytes": 297707,
+      "local_snapshot": "data/raw/alfred_T10Y2Y_series_observations_7c96a2dface25e01.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_T10Y2Y_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "T10Y2Y",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2026-01-01",
+        "realtime_end": "2026-07-10",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:57.133059+00:00",
+      "http_status": 200,
+      "sha256": "4efbd3a7aaf84116df28133b8fe0970c2f5483c568d7c8d67bd3b6e08501cd81",
+      "bytes": 310683,
+      "local_snapshot": "data/raw/alfred_T10Y2Y_series_observations_a035ff043a268df0.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_PPIACO_series",
+      "url": "https://api.stlouisfed.org/fred/series",
+      "parameters": {
+        "series_id": "PPIACO",
+        "file_type": "json"
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:57.359318+00:00",
+      "http_status": 200,
+      "sha256": "a62c34e80af03648ac1ff02e6b84561a625ba4f83298d7bdedfec66ad57cde09",
+      "bytes": 508,
+      "local_snapshot": "data/raw/alfred_PPIACO_series_0110524492e641aa.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_PPIACO_series_release",
+      "url": "https://api.stlouisfed.org/fred/series/release",
+      "parameters": {
+        "series_id": "PPIACO",
+        "file_type": "json"
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:57.583269+00:00",
+      "http_status": 200,
+      "sha256": "aaa58da217f3ccda82df8970c25d88e0ec5bc67195d7f499e96eab89dffcdd7d",
+      "bytes": 228,
+      "local_snapshot": "data/raw/alfred_PPIACO_series_release_b25940b31679589e.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_PPIACO_series_vintagedates",
+      "url": "https://api.stlouisfed.org/fred/series/vintagedates",
+      "parameters": {
+        "series_id": "PPIACO",
+        "file_type": "json",
+        "realtime_start": "2014-01-01",
+        "realtime_end": "2026-07-10",
+        "limit": 10000,
+        "sort_order": "asc"
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:57.827460+00:00",
+      "http_status": 200,
+      "sha256": "736aeaa3280210fc46dd465805f7b6de9483a327727dd14a245e302b54694b1a",
+      "bytes": 2135,
+      "local_snapshot": "data/raw/alfred_PPIACO_series_vintagedates_a7ebc4cbc1e55c35.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_PPIACO_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "PPIACO",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2014-01-01",
+        "realtime_end": "2016-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:58.088100+00:00",
+      "http_status": 200,
+      "sha256": "b4d7c1825d6cdf22d25f88c2a97eb7976be7ac0701c68fd27ff0f0fc3f46f193",
+      "bytes": 6035,
+      "local_snapshot": "data/raw/alfred_PPIACO_series_observations_d57b141e2bb178a8.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_PPIACO_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "PPIACO",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2017-01-01",
+        "realtime_end": "2019-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:58.348277+00:00",
+      "http_status": 200,
+      "sha256": "c353013a759fb680b3a8b691b179fea08d6e0bffc53baf756ab85082305e5d13",
+      "bytes": 9972,
+      "local_snapshot": "data/raw/alfred_PPIACO_series_observations_da3f2d0c4d2c9de9.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_PPIACO_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "PPIACO",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2020-01-01",
+        "realtime_end": "2022-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:58.703112+00:00",
+      "http_status": 200,
+      "sha256": "a7a8a350ad50174b2d61edf8f5d86c8c785df5f921d0a161b5aff6ab66e40e45",
+      "bytes": 17782,
+      "local_snapshot": "data/raw/alfred_PPIACO_series_observations_c21bbfb86f607718.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_PPIACO_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "PPIACO",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2023-01-01",
+        "realtime_end": "2025-12-31",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:59.002622+00:00",
+      "http_status": 200,
+      "sha256": "b1ba08936a810633c73a4d7d71a520229a96910bcc29d9e5db06f35e93a57a8f",
+      "bytes": 27046,
+      "local_snapshot": "data/raw/alfred_PPIACO_series_observations_3798e10fd349fa03.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    },
+    {
+      "source_id": "alfred_PPIACO_series_observations",
+      "url": "https://api.stlouisfed.org/fred/series/observations",
+      "parameters": {
+        "series_id": "PPIACO",
+        "file_type": "json",
+        "observation_start": "2014-01-01",
+        "observation_end": "2026-07-10",
+        "realtime_start": "2026-01-01",
+        "realtime_end": "2026-07-10",
+        "output_type": 1,
+        "units": "lin",
+        "sort_order": "asc",
+        "limit": 100000,
+        "offset": 0
+      },
+      "retrieved_at_utc": "2026-10-31T08:11:59.304126+00:00",
+      "http_status": 200,
+      "sha256": "3f63cecdf89d4421d1cc89e2fbc501b158cfaef3ebaaa8ed4f3c3285de9ac00c",
+      "bytes": 17442,
+      "local_snapshot": "data/raw/alfred_PPIACO_series_observations_7c9d20030c90790b.json",
+      "redistributed": false,
+      "reused_local_snapshot": true
+    }
+  ],
+  "macro_sources": {
+    "VIXCLS": {
+      "series_url": "https://fred.stlouisfed.org/series/VIXCLS",
+      "attribution": "CBOE Volatility Index: VIX",
+      "release_ids": [
+        200
+      ],
+      "vintage_dates": {
+        "count": 3135,
+        "first": "2014-01-01",
+        "last": "2026-07-10"
+      },
+      "observation_rows": 11100,
+      "historical_intraday_release_times": "not supplied by ALFRED",
+      "availability_rule": "next local midnight after the ALFRED vintage date",
+      "redistribution": "observations withheld; publish retrieval metadata and attribution only"
+    },
+    "T10Y2Y": {
+      "series_url": "https://fred.stlouisfed.org/series/T10Y2Y",
+      "attribution": "10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity",
+      "release_ids": [
+        304
+      ],
+      "vintage_dates": {
+        "count": 3075,
+        "first": "2014-01-27",
+        "last": "2026-07-10"
+      },
+      "observation_rows": 11098,
+      "historical_intraday_release_times": "not supplied by ALFRED",
+      "availability_rule": "next local midnight after the ALFRED vintage date",
+      "redistribution": "observations withheld; publish retrieval metadata and attribution only"
+    },
+    "PPIACO": {
+      "series_url": "https://fred.stlouisfed.org/series/PPIACO",
+      "attribution": "Producer Price Index by Commodity: All Commodities",
+      "release_ids": [
+        46
+      ],
+      "vintage_dates": {
+        "count": 152,
+        "first": "2014-01-15",
+        "last": "2026-06-11"
+      },
+      "observation_rows": 794,
+      "historical_intraday_release_times": "not supplied by ALFRED",
+      "availability_rule": "next local midnight after the ALFRED vintage date",
+      "redistribution": "observations withheld; publish retrieval metadata and attribution only"
+    }
+  },
+  "coverage": {
+    "research_weeks": 624,
+    "first_week_start": "2014-07-28",
+    "splits": {
+      "warm_up": 52,
+      "initial_training": 260,
+      "validation": 208,
+      "locked_test": 104
+    },
+    "first_price_boundary_utc": "2014-07-25T20:00:00+00:00",
+    "last_required_realization_utc": "2026-08-10T20:00:00+00:00",
+    "required_daily_sessions_per_asset": 3028,
+    "assets": {
+      "VT": {
+        "missing_sessions": 0,
+        "adjusted_prices": true
+      },
+      "IEF": {
+        "missing_sessions": 0,
+        "adjusted_prices": true
+      },
+      "LQD": {
+        "missing_sessions": 0,
+        "adjusted_prices": true
+      },
+      "VNQ": {
+        "missing_sessions": 0,
+        "adjusted_prices": true
+      },
+      "DBC": {
+        "missing_sessions": 0,
+        "adjusted_prices": true
+      },
+      "BIL": {
+        "missing_sessions": 0,
+        "adjusted_prices": true
+      }
+    },
+    "macro_cutoffs_per_series_including_history": 628,
+    "macro_missing_cutoffs": 0,
+    "friday_holiday_decisions": 22,
+    "holiday_shifted_executions": 61,
+    "selection_eligible_validation_origins": 204,
+    "boundary_crossing_validation_origins": [
+      517,
+      518,
+      519,
+      520
+    ]
+  },
+  "unavailable_required_inputs": [],
+  "locked_test_evaluated": false,
+  "market_source": {
+    "provider": "Yahoo Finance",
+    "assets": [
+      "VT",
+      "IEF",
+      "LQD",
+      "VNQ",
+      "DBC",
+      "BIL"
+    ],
+    "retrieval_client": "requests; Yahoo chart JSON endpoint",
+    "snapshot_representation": "exact response body bytes after HTTP content decoding"
+  },
+  "publication": {
+    "contents": "retrieval metadata, dates, hashes, methods, and attribution only",
+    "raw_and_derived_observations": "private under ignored data/; no observations published",
+    "yahoo": "personal research use; no permission to redistribute snapshots is assumed",
+    "fred": "series owners retain rights; VIXCLS and T10Y2Y require attribution; PPIACO is public-domain with citation requested",
+    "terms_urls": {
+      "yahoo_terms": "https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html",
+      "yahoo_finance_terms": "https://legal.yahoo.com/us/en/yahoo/terms/product-atos/finance/index.html",
+      "fred_terms": "https://fred.stlouisfed.org/docs/api/terms_of_use.html",
+      "alfred_availability": "https://alfred.stlouisfed.org/help"
+    },
+    "terms_reviewed_on": "2026-10-31",
+    "terms_review_method": "official Yahoo terms saved locally; official FRED API terms and ALFRED help verified through web access (documentation-host raw download timed out)"
+  },
+  "methods": {
+    "exchange_calendar": "XNYS",
+    "friday_holiday": "Friday 16:00 local cutoff; last prior exchange close for prices",
+    "friday_early_close": "actual exchange close is the decision cutoff",
+    "execution": "Monday close, or next trading close on a market holiday",
+    "target": "actual execution date plus four calendar weeks; next session if closed",
+    "macro_availability": "next local midnight after the ALFRED vintage date",
+    "macro_timing_precision": "date-only vintages; intraday release/ingestion times are unknown, not invented",
+    "query_boundary_intervals": "adjacent unchanged ALFRED intervals are coalesced before assigning availability; raw clipped intervals are preserved",
+    "macro_changes": "difference or fractional percentage change of levels known at their respective weekly cutoffs",
+    "adjustment": "Yahoo adjusted close; OHLC multiplied by adjusted-close/raw-close (the yfinance adjustment formula)",
+    "market_vintages": "current provider history snapshotted exactly; historical market-data revision vintages are not supplied",
+    "vintage_paging": "3-year real-time intervals and observation-offset pagination"
+  },
+  "reconstruction": [
+    "Use CPython 3.12.14 and install requirements.txt into the project .venv.",
+    "Supply FRED_API_KEY through the process environment; no key appears in this manifest.",
+    "Run python run_pipeline.py --stage data from the project root with the .venv interpreter.",
+    "Restore the listed private snapshots and adjacent metadata files to data/raw/ to replay exact bytes; every cached response is hash-checked.",
+    "Without local snapshots the command retrieves the recorded endpoints/parameters again; later provider revisions can change bytes and hashes.",
+    "Neither original provider observations nor derived price/features/targets are distributed with this manifest."
+  ],
+  "dependency_versions": {
+    "pandas": "3.1.0",
+    "numpy": "2.5.4",
+    "yfinance": "1.7.0",
+    "fredapi": "0.5.2",
+    "requests": "2.34.2",
+    "exchange-calendars": "4.13.2"
+  },
+  "local_artifacts": [
+    {
+      "name": "calendar",
+      "local_path": "data/processed/calendar.csv",
+      "rows": 624,
+      "sha256": "45c028246d7da3db07f27de1dd02ea4860663406a7800faac7c88930c4e07292",
+      "redistributed": false
+    },
+    {
+      "name": "adjusted_prices",
+      "local_path": "data/processed/adjusted_prices.csv",
+      "rows": 3028,
+      "sha256": "cda22a701755cad89d6f1b5e5b7ca7fd90e5734d9d93ecf457b3a3cbd2532521",
+      "redistributed": false
+    },
+    {
+      "name": "weekly_returns",
+      "local_path": "data/processed/weekly_returns.csv",
+      "rows": 624,
+      "sha256": "cf4083cd065537d5a284f85bfe49d36cc0eee665dae3f96e67897dfb35b6c7b0",
+      "redistributed": false
+    },
+    {
+      "name": "macro_predictors",
+      "local_path": "data/processed/macro_predictors.csv",
+      "rows": 624,
+      "sha256": "5fa1720dc9816be316d1fab9619ff590a2cc258e9309a2ab89728a148e568fa5",
+      "redistributed": false
+    },
+    {
+      "name": "macro_availability",
+      "local_path": "data/processed/macro_availability.csv",
+      "rows": 1884,
+      "sha256": "9ce01b3fc9ad3d16a432ce3d2e4eaab13396fd3324657c242dfc29598707cb64",
+      "redistributed": false
+    },
+    {
+      "name": "features",
+      "local_path": "data/processed/features.csv",
+      "rows": 3120,
+      "sha256": "c3383edf8ffcffeaa66fb7f9f516c9f8ab87b1dbfd8105472e951b154475e0c0",
+      "redistributed": false
+    },
+    {
+      "name": "targets",
+      "local_path": "data/processed/targets.csv",
+      "rows": 3744,
+      "sha256": "492ab0565beb6d88ebc9f8808d454b8b5e251893125a75cba56d386769142d4d",
+      "redistributed": false
+    }
+  ],
+  "code_hash_format": "sha256 of UTF-8 source text normalized to LF line endings",
+  "code_hashes": {
+    "regime_allocation/config.py": "d1dcb00b12ab419ced40a83c8d89587b3de4a333c2bc319037c71a89efa0d5f7",
+    "regime_allocation/data.py": "e2c463293c58c3957cc1c4fc48d590a730fe900743e7b4ff2b9091fa724db2ba",
+    "regime_allocation/features.py": "8b7d8120fc7e61a9b46bf7cbeb371eeb9e1372c44a9cc1836c590b87234c6de7",
+    "run_pipeline.py": "def462e9b7c0cb1672c75055a81101015c9349f6446b99882df0903904f16c36",
+    "requirements.txt": "bb896a5de483d95a7155f8a16a3e7fd6630786459f597af853891b15abae8523"
+  },
+  "completed_at_utc": "2026-10-31T08:39:12.674009+00:00"
+}

@@ -22,3 +22,6 @@ htmlcov/
 
 # Local editor state
 /.vscode/
+
+# Provider snapshots and derived observations stay local
+/data/
