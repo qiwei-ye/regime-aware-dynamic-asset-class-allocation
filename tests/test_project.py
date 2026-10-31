@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
@@ -13,7 +14,9 @@ import numpy as np
 import pandas as pd
 import requests
 
-from regime_allocation import config, data, features
+from regime_allocation import config, data, features, models, portfolio, evaluation
+from sklearn.ensemble import HistGradientBoostingRegressor
+import run_pipeline
 
 
 class AdjustedReturnTests(unittest.TestCase):
@@ -440,6 +443,306 @@ class CredentialTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "FRED_API_KEY"):
                 config.fred_api_key()
 
+
+
+class FilteringTests(unittest.TestCase):
+    def test_forward_recursion_matches_hand_calculation_and_has_no_smoothing(self):
+        emissions = np.log([[0.4, 0.1], [0.2, 0.5], [0.01, 0.9]])
+        transition = np.array([[0.8, 0.2], [0.3, 0.7]])
+        filtered = models.forward_filter(emissions, [0.6, 0.4], transition)
+        np.testing.assert_allclose(filtered[0], [6 / 7, 1 / 7])
+        np.testing.assert_allclose(filtered[1], [102 / 197, 95 / 197])
+        prefix = models.forward_filter(emissions[:2], [0.6, 0.4], transition)
+        np.testing.assert_array_equal(filtered[:2], prefix)
+
+    def test_gaussian_state_columns_follow_emission_means(self):
+        high_first = SimpleNamespace(
+            means_=np.array([[1.0], [-1.0]]), _covars_=np.ones((2, 1)),
+            startprob_=np.array([0.5, 0.5]), transmat_=np.array([[0.8, 0.2], [0.3, 0.7]]),
+        )
+        low_first = SimpleNamespace(
+            means_=high_first.means_[::-1], _covars_=high_first._covars_[::-1],
+            startprob_=high_first.startprob_[::-1], transmat_=high_first.transmat_[::-1, ::-1],
+        )
+        actual = models.gaussian_filtered_probabilities([1, 0, -1], high_first)
+        np.testing.assert_allclose(actual[0], [1 / (1 + np.exp(2)), 1 / (1 + np.exp(-2))])
+        np.testing.assert_allclose(actual, models.gaussian_filtered_probabilities([1, 0, -1], low_first))
+
+    def test_covariance_floor_is_applied_after_estimation(self):
+        values = np.r_[np.full(20, -1.0), np.full(20, 1.0)].reshape(-1, 1)
+        model = models._FlooredGaussianHMM(**config.HMM_SETTINGS, random_state=42).fit(values)
+        self.assertGreaterEqual(model._covars_.min(), 0.001)
+
+    def test_failed_fits_are_exposed_after_seeded_attempts(self):
+        with patch.object(config, "HMM_MAX_FIT_ATTEMPTS", 2), patch.object(
+            models._FlooredGaussianHMM, "fit", side_effect=ValueError("invalid transition")
+        ) as fit:
+            with self.assertRaisesRegex(models.ModelFitError, "all 2 seeded fits failed"):
+                models.fit_regime(np.arange(20.0), "hmm_equity_stress", 53)
+            self.assertEqual(fit.call_count, 2)
+
+    def test_later_macro_values_do_not_rewrite_historical_regime_features(self):
+        weeks = pd.RangeIndex(1, 13, name="research_week")
+        macro = pd.DataFrame({
+            "VIXCLS_level": np.sin(np.arange(12)) + np.arange(12) / 10,
+            "T10Y2Y_level": np.cos(np.arange(12)) + np.arange(12) / 20,
+            "PPIACO_change_4w": np.sin(np.arange(12) * 1.7) / 10,
+        }, index=weeks)
+        calendar = data.align_calendar(data.session_schedule()).loc[weeks]
+        with tempfile.TemporaryDirectory(dir=config.PROJECT_ROOT / ".venv") as directory:
+            root = Path(directory).resolve()
+            self.assertTrue(root.is_relative_to((config.PROJECT_ROOT / ".venv").resolve()))
+            with patch.object(config, "REGIME_CACHE_PATH", root / "regimes.joblib"):
+                original = models.causal_regimes({"macro_predictors": macro, "calendar": calendar})
+                changed = macro.copy()
+                changed.loc[12] += 0.25
+                later = models.causal_regimes({"macro_predictors": changed, "calendar": calendar})
+            pd.testing.assert_frame_equal(original["features"].loc[:11], later["features"].loc[:11])
+            self.assertTrue(original["probabilities"]["last_training_week"].eq(
+                original["probabilities"]["research_week"]
+            ).all())
+
+
+class RollingModelTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.calendar = data.align_calendar(data.session_schedule())
+        index = pd.MultiIndex.from_product(
+            [range(53, 316), config.FORECAST_ASSETS], names=["research_week", "asset"]
+        )
+        signal = np.sin(index.get_level_values("research_week").to_numpy() / 7)
+        cls.features = pd.DataFrame({"signal": signal}, index=index)
+        cls.targets = pd.DataFrame({
+            "target_4w_excess_return": signal / 100,
+            "realization_close": [cls.calendar.at[week, "realization_close"]
+                                  for week in index.get_level_values("research_week")],
+        }, index=index)
+        cls.regimes = pd.DataFrame({"regime": np.linspace(0.1, 0.9, 315)},
+                                  index=pd.RangeIndex(1, 316, name="research_week"))
+
+    def inputs(self, targets=None):
+        return {"features": self.features, "targets": self.targets if targets is None else targets,
+                "calendar": self.calendar}
+
+    def test_origin_training_contains_only_mature_labels_in_calendar_window(self):
+        origin = models.origin_dataset(self.inputs(), self.regimes, 313)
+        self.assertEqual(origin["training_observations"], 256 * 5)
+        self.assertEqual(origin["latest_training_realization"], pd.Timestamp("2020-07-20T20:00:00Z"))
+        changed = self.targets.copy()
+        changed.loc[changed.index.get_level_values("research_week") >= 309, "target_4w_excess_return"] = 10000
+        first_id, parameters = next(config.grid_candidates(config.RETURN_MODEL_GRID))
+        actual, _ = models.fit_forecast(self.inputs(), self.regimes, 313, first_id, parameters)
+        altered, _ = models.fit_forecast(self.inputs(changed), self.regimes, 313, first_id, parameters)
+        np.testing.assert_array_equal(actual, altered)
+
+    def test_iteration_checkpoints_equal_independent_seeded_fits(self):
+        dataset = models.origin_dataset(self.inputs(), self.regimes, 313)
+        warm = HistGradientBoostingRegressor(**config.RETURN_MODEL_SETTINGS, warm_start=True)
+        for candidate, parameters in models.candidate_groups()[0][:2]:
+            seed = config.seed_record("return_model", 313, candidate_id=candidate)["random_state"]
+            warm.set_params(**parameters, random_state=seed)
+            warm.fit(dataset["x"], dataset["y"])
+            cold = HistGradientBoostingRegressor(
+                **config.RETURN_MODEL_SETTINGS, **parameters, random_state=seed
+            ).fit(dataset["x"], dataset["y"])
+            np.testing.assert_array_equal(warm.predict(dataset["query"]), cold.predict(dataset["query"]))
+
+    def test_checkpoint_groups_preserve_every_candidate_and_fit_count(self):
+        groups = models.candidate_groups()
+        identifiers = [candidate for group in groups for candidate, _ in group]
+        self.assertEqual(len(groups), 2750)
+        self.assertEqual(sorted(identifiers), list(range(13750)))
+        self.assertTrue(all([p["max_iter"] for _, p in group] == [100, 200, 300, 400, 500]
+                            for group in groups))
+        self.assertEqual(len(identifiers) * 208, 2_860_000)
+
+
+class PortfolioTests(unittest.TestCase):
+    def test_projection_drift_and_turnover_match_hand_calculations(self):
+        np.testing.assert_allclose(portfolio.project_weights([1, 0, 0, 0, 0, 0]), [0.5, 0.1, 0.1, 0.1, 0.1, 0.1])
+        drifted = portfolio.drift_weights([0.5, 0.1, 0.1, 0.1, 0.1, 0.1], [2, 1, 1, 1, 1, 1])
+        np.testing.assert_allclose(drifted, [2 / 3, 1 / 15, 1 / 15, 1 / 15, 1 / 15, 1 / 15])
+        self.assertAlmostEqual(portfolio.one_way_turnover(drifted, np.full(6, 1 / 6)), 0.5)
+        with self.assertRaises(portfolio.AllocationError):
+            portfolio.check_weights(drifted)
+
+    def test_covariance_uses_available_window_and_four_week_horizon(self):
+        time = np.arange(260)
+        values = np.column_stack([np.cos(2 * np.pi * frequency * time / 260) for frequency in range(1, 7)])
+        returns = pd.DataFrame(values, index=range(1, 261), columns=config.ASSETS)
+        returns.loc[261] = 10000
+        np.testing.assert_allclose(portfolio.covariance_at(returns, 260), np.eye(6) * 2, atol=1e-12)
+        with self.assertRaises(portfolio.AllocationError):
+            portfolio.covariance_at(returns.loc[2:], 260)
+
+    def test_inverse_volatility_uses_sample_volatility_and_same_constraints(self):
+        pattern = np.array([1, -1] * 26)
+        values = pattern[:, None] * np.arange(1, 7)[None, :]
+        returns = pd.DataFrame(values, index=range(1, 53), columns=config.ASSETS)
+        returns.loc[53] = 10000
+        inverse = 1 / np.arange(1, 7, dtype=float)
+        np.testing.assert_allclose(portfolio.benchmark_target(returns, 52, "inverse_volatility"), inverse / inverse.sum())
+        np.testing.assert_allclose(portfolio.benchmark_target(returns, 52, "equal_weight"), np.full(6, 1 / 6))
+        with self.assertRaises(portfolio.AllocationError):
+            portfolio.benchmark_target(returns.assign(BIL=0), 52, "inverse_volatility")
+
+    def test_solver_symmetric_and_linear_optima_are_feasible(self):
+        reference = np.full(6, 1 / 6)
+        solver = portfolio.ConstrainedAllocator(3, 0.003)
+        weights, diagnostic = solver.solve(np.zeros(6), np.eye(6), reference)
+        np.testing.assert_allclose(weights, reference, atol=1e-8)
+        self.assertEqual(diagnostic["solver_status"], "optimal")
+        weights, _ = solver.solve([1, 0, 0, 0, 0, 0], np.zeros((6, 6)), reference)
+        self.assertAlmostEqual(weights[0], 0.5, places=7)
+        portfolio.check_weights(weights)
+        with self.assertRaises(portfolio.AllocationError):
+            solver.solve(np.zeros(6), -np.eye(6), reference)
+
+    def test_solver_failure_is_exposed_without_substituting_weights(self):
+        solver = portfolio.ConstrainedAllocator(1, 0.001)
+        with patch.object(solver.problem, "solve", side_effect=portfolio.cp.error.SolverError("failed")):
+            with self.assertRaisesRegex(portfolio.AllocationError, "failed"):
+                solver.solve(np.zeros(6), np.eye(6), np.full(6, 1 / 6))
+
+    def holdings_fixture(self):
+        calendar = data.align_calendar(data.session_schedule()).loc[[313, 314]]
+        dates = [calendar.at[313, "predictor_close"], calendar.at[313, "execution_close"],
+                 calendar.at[314, "predictor_close"], calendar.at[314, "execution_close"],
+                 calendar.at[314, "next_execution_close"]]
+        prices = pd.DataFrame(100.0, index=dates, columns=config.ASSETS)
+        prices["VT"] = [100, 200, 300, 400, 400]
+        return calendar, prices
+
+    def test_execution_holdings_and_turnover_reconcile(self):
+        calendar, prices = self.holdings_fixture()
+        allocations, returns, state = portfolio.simulate(
+            prices, pd.DataFrame(), calendar, None, [313, 314], name="equal_weight"
+        )
+        first = allocations.loc[allocations["research_week"].eq(313)].set_index("asset")
+        self.assertAlmostEqual(first.at["VT", "pretrade_weight"], 2 / 7)
+        self.assertAlmostEqual(first.at["VT", "reference_weight"], 1 / 6)
+        self.assertAlmostEqual(returns.iloc[0]["one_way_turnover"], 5 / 42)
+        self.assertAlmostEqual(returns.iloc[0]["weekly_total_return"], 1 / 6)
+        self.assertAlmostEqual(returns.iloc[1]["weekly_total_return"], 0)
+        self.assertAlmostEqual(state["wealth_at_execution"], 49 / 36)
+        np.testing.assert_allclose(allocations.groupby("research_week")["executed_weight"].sum(), 1)
+        np.testing.assert_allclose(allocations["wealth_before_trade"], allocations["wealth_after_trade"])
+
+    def test_optimizer_reference_is_friday_holdings_before_monday_drift(self):
+        calendar, prices = self.holdings_fixture()
+        forecasts = pd.DataFrame(0.0, index=[313, 314], columns=config.ASSETS)
+        references = []
+        def solve(_, mean, covariance, reference):
+            references.append(reference.copy())
+            return np.full(6, 1 / 6), {"solver_status": "fixture", "solver_iterations": 0, "objective": 0}
+        with patch.object(portfolio.ConstrainedAllocator, "solve", solve), patch.object(portfolio, "covariance_at", return_value=np.eye(6)):
+            allocations, _, _ = portfolio.simulate(
+                prices, pd.DataFrame(), calendar, forecasts, [313, 314], name="strategy",
+                parameters={"risk_aversion": 1, "turnover_penalty": 0.001},
+            )
+        self.assertAlmostEqual(references[1][0], 3 / 13)
+        self.assertAlmostEqual(allocations.loc[allocations["research_week"].eq(314)].iloc[0]["pretrade_weight"], 2 / 7)
+
+    def test_selection_does_not_read_prices_beyond_its_cutoff(self):
+        calendar, prices = self.holdings_fixture()
+        available = prices.loc[prices.index < calendar.at[313, "next_execution_close"]]
+        _, returns, _ = portfolio.simulate(
+            available, pd.DataFrame(), calendar, None, [313], name="equal_weight",
+            cutoff=calendar.at[313, "next_execution_close"],
+        )
+        self.assertFalse(returns.iloc[0]["scored"])
+        self.assertTrue(np.isnan(returns.iloc[0]["weekly_total_return"]))
+
+
+class EvaluationTests(unittest.TestCase):
+    def test_result_round_trip_preserves_frozen_float_values_and_hashes(self):
+        with tempfile.TemporaryDirectory(dir=config.PROJECT_ROOT / ".venv") as directory:
+            root = Path(directory).resolve()
+            self.assertTrue(root.is_relative_to((config.PROJECT_ROOT / ".venv").resolve()))
+            frame = pd.DataFrame({
+                "research_week": [313, 314], "evaluation_period": ["validation"] * 2,
+                "weekly_total_return": [np.nextafter(1.0, 2.0), 1.2345678901234567e-15],
+                "scored": [True, False], "exclusion_reason": ["", "boundary"],
+            })
+            with patch.object(config, "RESULT_PATHS", {"weekly_returns": root / "returns.csv"}):
+                original = evaluation._export({"weekly_returns": frame})
+                replayed = evaluation._read_result("weekly_returns")
+                self.assertEqual(evaluation._export({"weekly_returns": replayed}), original)
+                np.testing.assert_array_equal(replayed["weekly_total_return"], frame["weekly_total_return"])
+
+    def test_metrics_match_independently_derived_formulas(self):
+        returns, cash, turnover = [0.1, -0.2, 0.05], [0.01] * 3, [0.1, 0.2, 0.3]
+        measures = evaluation.performance_measures(returns, cash, turnover)
+        self.assertAlmostEqual(measures["annualized_return"], 0.924 ** (52 / 3) - 1)
+        mean = -0.05 / 3
+        variance = sum((value - mean) ** 2 for value in returns) / 2
+        self.assertAlmostEqual(measures["annualized_volatility"], np.sqrt(variance * 52))
+        self.assertAlmostEqual(measures["excess_return_sharpe"], (mean - 0.01) / np.sqrt(variance) * np.sqrt(52))
+        self.assertAlmostEqual(measures["maximum_drawdown"], -0.2)
+        self.assertAlmostEqual(measures["mean_weekly_turnover"], 0.2)
+        self.assertAlmostEqual(evaluation.performance_measures([-0.1, 0.2], [0, 0], [0, 0])["maximum_drawdown"], -0.1)
+
+    def test_pooled_error_excludes_cash_and_boundary_crossing_outcomes(self):
+        forecasts = pd.DataFrame([
+            {"research_week": 313, "asset": asset, "forecast_4w_excess_return": position / 100,
+             "realized_target": 0, "scored": True}
+            for position, asset in enumerate(config.FORECAST_ASSETS)
+        ] + [
+            {"research_week": 313, "asset": "BIL", "forecast_4w_excess_return": 100,
+             "realized_target": 0, "scored": True},
+            {"research_week": 520, "asset": "VT", "forecast_4w_excess_return": 100,
+             "realized_target": np.nan, "scored": False},
+        ])
+        self.assertAlmostEqual(evaluation.forecast_score(forecasts), 0.0006)
+
+    def test_locked_stage_requires_a_frozen_experiment(self):
+        with tempfile.TemporaryDirectory(dir=config.PROJECT_ROOT / ".venv") as directory:
+            root = Path(directory).resolve()
+            self.assertTrue(root.is_relative_to((config.PROJECT_ROOT / ".venv").resolve()))
+            with patch.object(config, "FROZEN_CONFIG_PATH", root / "absent.json"), patch.object(config, "TEST_RECEIPT_PATH", root / "receipt.json"):
+                with self.assertRaisesRegex(evaluation.EvaluationError, "freeze settings"):
+                    evaluation.run_locked_test()
+                self.assertFalse((root / "receipt.json").exists())
+
+    def test_default_cli_dispatches_all_stages_and_select_does_not_test(self):
+        calls = []
+        manifest = {"coverage": {"research_weeks": 624, "required_daily_sessions_per_asset": 3028}}
+        with patch.object(run_pipeline, "prepare_data", side_effect=lambda: calls.append("data") or manifest), patch.object(evaluation, "run_selection", side_effect=lambda: calls.append("select")), patch.object(evaluation, "run_locked_test", side_effect=lambda: calls.append("test")):
+            self.assertEqual(run_pipeline.main([]), 0)
+            self.assertEqual(calls, ["data", "select", "test"])
+            calls.clear()
+            self.assertEqual(run_pipeline.main(["--stage", "select"]), 0)
+            self.assertEqual(calls, ["select"])
+
+    def test_frozen_reproduction_preserves_choices_and_detects_changed_inputs(self):
+        with tempfile.TemporaryDirectory(dir=config.PROJECT_ROOT / ".venv") as directory:
+            root = Path(directory).resolve()
+            self.assertTrue(root.is_relative_to((config.PROJECT_ROOT / ".venv").resolve()))
+            input_path = root / "input.csv"
+            input_path.write_bytes(b"recorded input\n")
+            frozen = {"code_hashes": {"model.py": "fixture"}, "dependency_versions": {"numpy": "fixture"},
+                      "input_provenance": {"prepared_tables": {"input.csv": hashlib.sha256(input_path.read_bytes()).hexdigest()}},
+                      "validation_output_hashes": {}, "return_candidate_id": 42}
+            frozen["seal"] = models.fingerprint(frozen)
+            frozen_path = root / "frozen.json"
+            frozen_path.write_text(json.dumps(frozen), encoding="utf-8")
+            with (
+                patch.object(config, "PROJECT_ROOT", root),
+                patch.object(config, "FROZEN_CONFIG_PATH", frozen_path),
+                patch.object(config, "TEST_RECEIPT_PATH", root / "absent.json"),
+                patch.object(evaluation, "_code_hashes", return_value={"model.py": "fixture"}),
+                patch.object(evaluation, "_dependency_versions", return_value={"numpy": "fixture"}),
+                patch.object(models, "select_return_model") as select,
+            ):
+                self.assertEqual(evaluation.run_selection()["return_candidate_id"], 42)
+                select.assert_not_called()
+                input_path.write_bytes(b"changed input\n")
+                with self.assertRaisesRegex(evaluation.EvaluationError, "Frozen input differs"):
+                    evaluation.verify_frozen()
+                frozen["return_candidate_id"] = 43
+                frozen_path.write_text(json.dumps(frozen), encoding="utf-8")
+                with self.assertRaisesRegex(evaluation.EvaluationError, "integrity"):
+                    evaluation.verify_frozen()
 
 
 if __name__ == "__main__":

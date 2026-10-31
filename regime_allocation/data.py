@@ -2,6 +2,7 @@
 
 from datetime import date, datetime, timedelta, timezone
 import hashlib
+import csv
 from importlib.metadata import version
 import json
 import os
@@ -504,3 +505,58 @@ def prepare_data():
         write_manifest(manifest)
         raise DataUnavailableError(str(error)) from None
     return manifest
+
+
+def load_prepared(period="validation"):
+    """Read verified snapshots; selection never receives locked-test outcomes."""
+    manifest = json.loads(c.RETRIEVAL_MANIFEST_PATH.read_text(encoding="utf-8"))
+    if manifest["status"] != "complete" or manifest["unavailable_required_inputs"]:
+        raise DataUnavailableError("Data preparation is incomplete.")
+    for entry in [*manifest["retrievals"], *manifest["local_artifacts"]]:
+        path = c.PROJECT_ROOT / entry.get("local_snapshot", entry.get("local_path"))
+        if hashlib.sha256(path.read_bytes()).hexdigest() != entry["sha256"]:
+            raise DataUnavailableError(f"Recorded input hash mismatch: {path.name}.")
+    indexes = {
+        "calendar": ["research_week"], "adjusted_prices": ["market_close"],
+        "weekly_returns": ["research_week"], "macro_predictors": ["research_week"],
+        "macro_availability": ["research_week", "series"],
+        "features": ["research_week", "asset"], "targets": ["research_week", "asset"],
+    }
+    utc_columns = {
+        "market_close", "decision_cutoff", "predictor_close", "execution_close",
+        "realization_close", "next_execution_close", "previous_predictor_close",
+        "available_at", "valid_until",
+    }
+    date_columns = {"week_start", "decision_date", "scheduled_execution_date",
+                    "scheduled_target_end_date", "observation_date"}
+    strings = utc_columns | date_columns | {
+        "research_week", "asset", "series", "split", "selection_eligible", "vintage_start", "vintage_end",
+    }
+    tables = {}
+    for name, path in c.PREPARED_PATHS.items():
+        with path.open(encoding="utf-8", newline="") as stream:
+            columns = next(csv.reader(stream))
+        numeric = {column: (lambda value: float(value) if value else np.nan)
+                   for column in columns if column not in strings}
+        frame = pd.read_csv(path, converters=numeric)
+        for column in frame.columns.intersection(list(utc_columns)):
+            frame[column] = pd.to_datetime(frame[column], utc=True)
+        for column in frame.columns.intersection(list(date_columns)):
+            frame[column] = pd.to_datetime(frame[column])
+        tables[name] = frame.set_index(indexes[name]).sort_index()
+    cutoff = tables["calendar"].at[c.SPLIT_WEEKS["locked_test"][0], "decision_cutoff"]
+    if period == "validation":
+        end = c.SPLIT_WEEKS["validation"][1]
+        for name, frame in tables.items():
+            if name == "adjusted_prices":
+                tables[name] = frame.loc[frame.index < cutoff]
+            else:
+                weeks = frame.index.get_level_values("research_week")
+                tables[name] = frame.loc[weeks <= end].copy()
+        future = tables["targets"]["realization_close"] >= cutoff
+        tables["targets"].loc[future, "target_4w_excess_return"] = np.nan
+    elif period != "locked_test":
+        raise ValueError(f"Unknown evaluation period: {period}")
+    tables["locked_test_cutoff"] = cutoff
+    tables["retrieval_manifest"] = manifest
+    return tables

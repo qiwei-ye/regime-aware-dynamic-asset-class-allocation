@@ -28,6 +28,22 @@ LOCKED_TEST_DIR = OUTPUT_DIR / "locked_test"
 FIGURES_DIR = OUTPUT_DIR / "figures"
 SEED_MAPPING_PATH = OUTPUT_DIR / "seed_mapping.jsonl"
 RETRIEVAL_MANIFEST_PATH = OUTPUT_DIR / "retrieval_manifest.json"
+ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
+FROZEN_CONFIG_PATH = ARTIFACTS_DIR / "frozen_config.json"
+TEST_RECEIPT_PATH = ARTIFACTS_DIR / "locked_test_receipt.json"
+MODEL_CACHE_DIR = DATA_DIR / "model_cache"
+REGIME_CACHE_PATH = MODEL_CACHE_DIR / "regimes.joblib"
+ORIGIN_DATASETS_PATH = MODEL_CACHE_DIR / "origin_datasets.joblib"
+RETURN_SEARCH_DIR = MODEL_CACHE_DIR / "return_search"
+RETURN_SELECTION_CACHE_PATH = MODEL_CACHE_DIR / "selected_return_model.joblib"
+JOBLIB_TEMP_DIR = MODEL_CACHE_DIR / "joblib_temp"
+TEST_FORECAST_CACHE_PATH = MODEL_CACHE_DIR / "locked_test_forecasts.joblib"
+RESULT_PATHS = MappingProxyType({
+    name: OUTPUT_DIR / f"{name}.csv" for name in (
+        "selection", "weekly_forecasts", "regime_probabilities", "weekly_allocations",
+        "weekly_returns", "performance",
+    )
+})
 PREPARED_PATHS = MappingProxyType(
     {name: PROCESSED_DATA_DIR / f"{name}.csv" for name in (
         "calendar", "adjusted_prices", "weekly_returns", "macro_predictors",
@@ -121,11 +137,15 @@ HMM_SETTINGS = MappingProxyType(
         "min_covar": 0.001,
         "n_iter": 200,
         "tol": 0.001,
+        "covars_prior": 0.0,
     }
 )
 HMM_STANDARDIZATION = "training-window mean and population standard deviation"
 HMM_PROBABILITIES = "causal filtering; states ordered by ascending emission mean"
 HMM_INITIAL_HISTORY = "shorter available history before a full rolling window"
+HMM_MIN_HISTORY_WEEKS = 8  # More observations than the two-state univariate parameter count.
+HMM_MAX_FIT_ATTEMPTS = 20
+HMM_MONOTONICITY_TOLERANCE = 1e-7
 
 RETURN_MODEL_SETTINGS = MappingProxyType(
     {
@@ -153,6 +173,17 @@ ALLOCATION_GRID = MappingProxyType(
 )
 ALLOCATION_SELECTION = "highest annualized validation excess-return Sharpe ratio"
 SELECTION_TIE_BREAK = "lowest candidate ID in the declared Cartesian grid order"
+SELECTION_WORKERS = max(1, min(22, (os.cpu_count() or 1) - 2))
+SELECTION_CHECKPOINT_GROUPS = 100
+MODEL_THREADS = 1
+HGB_BINNING_SUBSAMPLE = 200000
+ALLOCATION_SOLVER = "CLARABEL"
+SOLVER_SETTINGS = MappingProxyType({
+    "tol_gap_abs": 1e-10, "tol_gap_rel": 1e-10, "tol_feas": 1e-10, "max_iter": 500,
+})
+ZERO_VOLATILITY_TOLERANCE = 1e-14
+COVARIANCE_TOLERANCE = 1e-12
+ACCOUNTING_TOLERANCE = 1e-10
 
 RETURN_MODEL_CANDIDATES = prod(len(values) for values in RETURN_MODEL_GRID.values())
 ALLOCATION_CANDIDATES = prod(len(values) for values in ALLOCATION_GRID.values())

@@ -1,0 +1,5 @@
+# Preserve reproducible text hashes across Git checkouts.
+*.py text eol=lf
+*.csv text eol=lf
+*.json text eol=lf
+requirements.txt text eol=lf
