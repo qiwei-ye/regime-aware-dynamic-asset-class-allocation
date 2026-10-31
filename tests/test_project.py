@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-from regime_allocation import config, data, features, models, portfolio, evaluation
+from regime_allocation import config, data, features, models, portfolio, evaluation, reporting, reproduction
 from sklearn.ensemble import HistGradientBoostingRegressor
 import run_pipeline
 
@@ -743,6 +743,76 @@ class EvaluationTests(unittest.TestCase):
                 frozen_path.write_text(json.dumps(frozen), encoding="utf-8")
                 with self.assertRaisesRegex(evaluation.EvaluationError, "integrity"):
                     evaluation.verify_frozen()
+
+
+class ReportingTests(unittest.TestCase):
+    def test_cumulative_paths_reset_periods_and_exclude_unscored_outcomes(self):
+        returns = pd.DataFrame({
+            "evaluation_period": ["validation"] * 3 + ["locked_test"],
+            "portfolio": ["strategy"] * 4,
+            "execution_close": ["2024-01-01", "2024-01-08", "2024-01-15", "2024-01-22"],
+            "realization_close": ["2024-01-08", "2024-01-15", "2024-01-22", "2024-01-29"],
+            "weekly_total_return": [0.1, -0.2, np.nan, 0.25],
+            "scored": [True, True, False, True],
+        })
+        paths = reporting.cumulative_performance(returns)
+        validation = paths.loc[paths["evaluation_period"].eq("validation")]
+        locked = paths.loc[paths["evaluation_period"].eq("locked_test")]
+        np.testing.assert_allclose(validation["wealth"], [1, 1.1, 0.88])
+        np.testing.assert_allclose(locked["wealth"], [1, 1.25])
+        self.assertEqual(validation["market_close"].max(), pd.Timestamp("2024-01-15", tz="UTC"))
+        self.assertEqual(locked["market_close"].min(), pd.Timestamp("2024-01-22", tz="UTC"))
+        with self.assertRaisesRegex(ValueError, "contiguous"):
+            reporting.cumulative_performance(returns.assign(
+                execution_close=["2024-01-01", "2024-01-09", "2024-01-15", "2024-01-22"]
+            ))
+
+    def test_allocation_steps_begin_at_execution_and_extend_last_holding(self):
+        targets = [[0.5, 0.1, 0.1, 0.1, 0.1, 0.1], [0.1, 0.5, 0.1, 0.1, 0.1, 0.1]]
+        allocations = pd.DataFrame([
+            {"portfolio": "strategy", "execution_close": date, "asset": asset, "executed_weight": weight}
+            for date, values in zip(["2024-01-08", "2024-01-15"], targets)
+            for asset, weight in zip(config.ASSETS, values)
+        ])
+        dates, values = reporting.allocation_steps(allocations, pd.Timestamp("2024-01-22", tz="UTC"))
+        self.assertEqual(dates.tolist(), list(pd.to_datetime(["2024-01-08", "2024-01-15", "2024-01-22"], utc=True)))
+        np.testing.assert_allclose(values, [targets[0], targets[1], targets[1]])
+
+
+class ReproductionTests(unittest.TestCase):
+    def test_numeric_reproduction_tolerance_accepts_roundoff_and_rejects_material_change(self):
+        with tempfile.TemporaryDirectory(dir=config.PROJECT_ROOT / ".venv") as directory:
+            root = Path(directory).resolve()
+            self.assertTrue(root.is_relative_to((config.PROJECT_ROOT / ".venv").resolve()))
+            expected, replayed = root / "expected.csv", root / "replayed.csv"
+            pd.DataFrame({"return": [1.0, np.nan]}).to_csv(expected, index=False)
+            pd.DataFrame({"return": [1.0 + 5e-11, np.nan]}).to_csv(replayed, index=False)
+            result = reproduction.compare_table(expected, replayed)
+            self.assertFalse(result["byte_identical"])
+            self.assertGreater(result["maximum_absolute_numeric_difference"], 0)
+            self.assertLess(result["maximum_absolute_numeric_difference"], 1e-10)
+            pd.DataFrame({"return": [1.0 + 5e-9, np.nan]}).to_csv(replayed, index=False)
+            with self.assertRaisesRegex(ValueError, "numeric tolerance"):
+                reproduction.compare_table(expected, replayed)
+
+    def test_reproduction_does_not_tolerate_changed_identifiers_or_unavailable_values(self):
+        with tempfile.TemporaryDirectory(dir=config.PROJECT_ROOT / ".venv") as directory:
+            root = Path(directory).resolve()
+            self.assertTrue(root.is_relative_to((config.PROJECT_ROOT / ".venv").resolve()))
+            expected, replayed = root / "expected.csv", root / "replayed.csv"
+            frame = pd.DataFrame({"candidate_id": [24, 24], "return": [0.1, np.nan]})
+            frame.to_csv(expected, index=False)
+            frame.assign(candidate_id=[25, 24]).to_csv(replayed, index=False)
+            with self.assertRaisesRegex(ValueError, "identifiers"):
+                reproduction.compare_table(expected, replayed)
+            frame.assign(**{"return": [0.1, 0.0]}).to_csv(replayed, index=False)
+            with self.assertRaisesRegex(ValueError, "unavailable"):
+                reproduction.compare_table(expected, replayed)
+            nullable = pd.DataFrame({"allocation_candidate_id": [14.0, np.nan]})
+            nullable.to_csv(expected, index=False)
+            nullable.assign(allocation_candidate_id=[14.0 + 5e-11, np.nan]).to_csv(replayed, index=False)
+            with self.assertRaisesRegex(ValueError, "identifiers"):
+                reproduction.compare_table(expected, replayed)
 
 
 if __name__ == "__main__":

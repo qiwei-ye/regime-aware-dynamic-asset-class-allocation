@@ -1,0 +1,14 @@
+{
+  "status": "complete",
+  "frozen_sha256": "e88e70657aba92237511b42f1549ab4ee15d982a651af63c995ac1e34dc88015",
+  "completed_at_utc": "2026-10-31T19:42:49.162944+00:00",
+  "output_hashes": {
+    "selection": "e87e1d7328e7c010ba0353e628a9fe1dc11378146bb979ec4c99ab6ca384a5c4",
+    "regime_probabilities": "75c257606904710f87710583f8ff87e90ae72504faeb1d90b1f2c974466dbdf4",
+    "weekly_forecasts": "f2200253f5743e2021e0dead9fa9f44ac80b270edf85732d3cef2d577edd8ae6",
+    "weekly_allocations": "9dd93f56033ddb3d17abea22e6af285581c2d83ad56f350fc8642395e07203ef",
+    "weekly_returns": "14bd23e05f208c7aa0c58f28b856500615d54d89f76b6b89931702097060a474",
+    "performance": "f0c8149faa068efd2f4673b13042e89a74bcd5fbc1625dc0d8c55435460b0708"
+  },
+  "return_model_fits": 104
+}
