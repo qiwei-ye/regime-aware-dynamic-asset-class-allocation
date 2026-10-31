@@ -1,47 +1,127 @@
 # Regime-Aware Dynamic Asset-Class Allocation
 
-A reproducible weekly research pipeline that uses causal regime probabilities and pooled return forecasts to allocate across six asset-class proxies, then compares simulated holdings with equal-weight and inverse-volatility benchmarks. It records validation selection, one locked assessment, execution accounting, and comparative figures.
+## Introduction
 
-## Data and sources
+This project studies weekly allocation across six asset-class proxies using causal regime probabilities, pooled four-week return forecasts, and constrained portfolio optimization. A reproducible historical backtest compares the strategy with equal-weight and inverse-volatility benchmarks, with separate validation and locked-test results.
 
-| Input | Source and interpretation |
+## Data and attribution
+
+| Input | Source, units, and frequency |
 | --- | --- |
-| Market histories | Yahoo Finance chart JSON, requested with `requests`: `VT` global equities, `IEF` government bonds, `LQD` investment-grade credit, `VNQ` real estate, `DBC` commodities, and `BIL` cash proxy. Daily distribution- and split-adjusted closes support constructed weekly returns and execution prices. |
-| Equity stress | Chicago Board Options Exchange, [CBOE Volatility Index: VIX (`VIXCLS`)](https://fred.stlouisfed.org/series/VIXCLS), daily closing index, retrieved through FRED/ALFRED, Federal Reserve Bank of St. Louis. |
-| Yield-curve stress | Federal Reserve Bank of St. Louis, [10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity (`T10Y2Y`)](https://fred.stlouisfed.org/series/T10Y2Y), daily percentage-point spread, retrieved through FRED/ALFRED. |
-| Producer-price pressure | U.S. Bureau of Labor Statistics, [Producer Price Index by Commodity: All Commodities (`PPIACO`)](https://fred.stlouisfed.org/series/PPIACO), monthly index, 1982 = 100, retrieved through FRED/ALFRED. |
+| Market histories | Yahoo Finance chart JSON, retrieved with `requests`: `VT` global equities, `IEF` government bonds, `LQD` investment-grade credit, `VNQ` real estate, `DBC` commodities, and `BIL` cash. Daily distribution- and split-adjusted prices support the return and execution calculations. |
+| Equity volatility | Chicago Board Options Exchange, [CBOE Volatility Index: VIX (`VIXCLS`)](https://fred.stlouisfed.org/series/VIXCLS), daily closing index, retrieved through FRED/ALFRED, Federal Reserve Bank of St. Louis. |
+| Treasury term spread | Federal Reserve Bank of St. Louis, [10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity (`T10Y2Y`)](https://fred.stlouisfed.org/series/T10Y2Y), daily percentage-point spread, retrieved through FRED/ALFRED. |
+| Producer prices | U.S. Bureau of Labor Statistics, [Producer Price Index by Commodity: All Commodities (`PPIACO`)](https://fred.stlouisfed.org/series/PPIACO), monthly index, 1982 = 100, retrieved through FRED/ALFRED. |
 
-The sample contains 624 consecutive seven-day research weeks beginning 28 July 2014. Prices cover 3,028 required sessions per asset, from the 25 July 2014 initial return boundary through 10 August 2026, which completes the final four-week target. Macro coverage includes four preceding weekly cutoffs. No required price sessions or macro cutoffs are missing.
+Prices cover 3,028 required sessions per asset, from 25 July 2014 through 10 August 2026. The initial boundary supports the first weekly return; the final endpoint completes the last four-week target. Macro history includes four preceding weekly cutoffs. No required sessions or macro cutoffs are missing.
 
-[The retrieval manifest](results/retrieval_manifest.json) records 32 exact response snapshots, source identifiers, request parameters, retrieval times, release IDs, vintage coverage, hashes, and reconstruction instructions. Original responses and prepared prices, features, and targets remain in ignored `data/`; published forecasts, probabilities, allocations, and portfolio returns are constructed research outputs. Current Yahoo adjustment history is snapshotted, rather than reconstructed from historical market-data vintages.
+The [retrieval manifest](results/retrieval_manifest.json) records 32 exact response snapshots, source identifiers, request parameters, retrieval times, release IDs, vintage coverage, hashes, and reconstruction instructions. Provider observations and prepared prices, features, and targets remain in ignored `data/`. Published forecasts, regime probabilities, allocations, and portfolio returns are constructed or simulated research quantities.
 
-ALFRED supplies historical vintages but not the required intraday release/ingestion timestamps. An observation or revision becomes eligible at the next midnight in `America/New_York` after its vintage date. Values are carried forward only inside their eligible vintage intervals; unavailable observations are never filled from later revisions. See [ALFRED's vintage and release-date explanation](https://alfred.stlouisfed.org/help).
+Source rights remain with their owners. VIX and the term-spread series require attribution; PPIACO is identified as public-domain data with citation requested. [FRED API access does not override series-owner restrictions](https://fred.stlouisfed.org/docs/api/terms_of_use.html). [Yahoo's general terms](https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html) restrict automated collection and reuse, and its [Finance terms](https://legal.yahoo.com/us/en/yahoo/terms/product-atos/finance/index.html) also apply. The repository grants no rights to redistribute provider observations or refresh them without applicable permissions. The manifest records the 31 October 2026 terms review.
 
-Source rights remain with their owners. VIX and the term-spread series require attribution; PPIACO is identified as public-domain data with citation requested on its source page. [FRED API access does not override series-owner restrictions](https://fred.stlouisfed.org/docs/api/terms_of_use.html). [Yahoo's general terms](https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html) restrict automated collection and reuse; its [Finance terms](https://legal.yahoo.com/us/en/yahoo/terms/product-atos/finance/index.html) also apply. The repository grants no rights to redistribute provider observations or to refresh them without the applicable permissions. Terms reviewed on 31 October 2026 are recorded in the manifest; Yahoo terms responses are preserved privately.
+Software attribution: pandas, NumPy, scikit-learn, hmmlearn, CVXPY with CLARABEL, joblib, Matplotlib, requests, and exchange-calendars. The environment also includes yfinance and fredapi; retrieval uses direct HTTP requests, and adjustment follows yfinance's adjusted-close/raw-close ratio.
 
-Software attribution: pandas, NumPy, scikit-learn, hmmlearn, CVXPY with CLARABEL, joblib, Matplotlib, requests, and exchange-calendars. The pinned environment also includes the specified yfinance and fredapi packages; actual retrieval uses direct HTTP requests, and price adjustment follows the adjusted-close/raw-close ratio used by yfinance.
+## Construction
 
-## Methodology
+### Research calendar and information availability
 
-### Calendar, predictors, and targets
+Research index $t$ identifies a consecutive Monday-start, seven-day week. The XNYS calendar resolves holidays, early closes, daylight saving time, and extraordinary closures.
 
-Research weeks 1–52 provide warm-up history; 53–312 are initial training; 313–520 are walk-forward validation; 521–624 are locked testing. Friday's actual exchange close is the decision cutoff. A Friday holiday retains a 16:00 New York cutoff and uses the last preceding close. Monday execution moves to the next trading close when necessary. The XNYS schedule handles holidays, early closes, daylight saving time, and extraordinary closures.
+| Symbol | Timestamp or quantity |
+| --- | --- |
+| $C_t$ | Friday decision cutoff: the actual exchange close, or 16:00 New York time when Friday is closed. |
+| $F_t$ | Latest available trading close at or before $C_t$, used for price predictors and reference holdings. |
+| $E_t$ | Following Monday's execution close, advanced to the next trading close if Monday is closed. |
+| $H_t$ | Close four calendar weeks after the actual execution date, advanced to the next session if closed. |
+| $P^a_s$ | Distribution- and split-adjusted price of asset $a$ at close $s$. |
 
-For adjusted close $P^a_{c_t}$ at resolved weekly close $c_t$, total return is $r^a_t=P^a_{c_t}/P^a_{c_{t-1}}-1$, and weekly excess return is $e^a_t=r^a_t-r^{BIL}_t$. Predictors comprise $e^a_{t-1}$, trailing 4-, 13-, and 52-week compounded excess returns $\prod(1+e^a)-1$, and sample standard deviations over those windows. Trailing windows include the current known Friday return. All three macro series contribute available levels and four-week changes: level differences for VIX and the spread, and fractional percentage change for PPI.
+Adjusted OHLC prices equal raw OHLC multiplied by adjusted close divided by raw close. Ratios of adjusted closes supply total returns.
 
-The supervised target is the asset's adjusted total return from actual execution close $E_t$ to $H_t$, less the BIL return over the same endpoints:
+Macro observations use the vintage available at each cutoff. Because historical intraday release/ingestion times are unavailable, each vintage becomes eligible at the next midnight in `America/New_York` after its vintage date. Carry-forward stops when its eligible vintage interval ends; later revisions cannot fill unavailable values. [ALFRED's documentation](https://alfred.stlouisfed.org/help) explains vintage and release dates.
+
+### Returns, predictors, and targets
+
+Weekly total and excess returns are
+
+$$r^a_t=P^a_{F_t}/P^a_{F_{t-1}}-1,\qquad e^a_t=r^a_t-r^{BIL}_t.$$
+
+Return predictors are $e^a_{t-1}$, trailing 4-, 13-, and 52-week compounded excess returns $\prod(1+e^a)-1$, and sample standard deviations over those windows. Trailing windows end at the current known Friday close. Macro predictors comprise available levels and four-week changes: differences for VIX and the term spread, and fractional percentage change for PPI. Each historical level is the value known at its own cutoff.
+
+The supervised four-week target, expressed as a return fraction, is
 
 $$y^a_t=(P^a_{H_t}/P^a_{E_t}-1)-(P^{BIL}_{H_t}/P^{BIL}_{E_t}-1).$$
 
-$H_t$ is four calendar weeks after the actual execution date, advanced to the next session if closed. BIL's excess forecast is fixed at zero. Each weekly supervised refit considers the preceding 260 calendar-origin weeks, starting no earlier than week 53, and retains labels only when $H_i$ is at or before the current decision cutoff. Earlier locked-test labels enter subsequent scheduled refits only after maturity.
+A training row from origin $i$ is eligible only when $i<t$ and $H_i\leq C_t$, within the configured calendar lookback and after warm-up. This maturity rule also governs earlier locked-test labels entering later scheduled refits.
 
-### Models, selection, and allocation
+### Execution, holdings, and turnover
 
-Three two-state univariate Gaussian HMMs use VIX level, term-spread level, and four-week fractional PPI change. Each origin fits its available history, capped at 260 weeks, with training-window mean/population-standard-deviation scaling. Initialization starts after eight observations. Diagonal variance is floored at 0.001 after every M step; `covars_prior=0`, `n_iter=200`, and `tol=0.001`. Unusable fits are exposed and retried with at most 20 named seeds. One week-17 warm-up initialization failed and was resolved by its next seed; all 312 locked-period HMM fits converged.
+Existing adjusted-price units $u_{t-1}$ represent distribution-reinvested holdings. Valuing them at $F_t$ gives the normalized Friday reference weights $w^F_t$; valuing them at $E_t$ gives pre-trade weights $w^-_t$ and NAV $V_t$. For target weights $w_t$,
 
-Forward recursion computes $q_t(s)\propto p(z_t\mid s)\sum_j A_{js}q_{t-1}(j)$, with normalization at every observation. State columns are ordered by ascending emission mean. Each historical feature row retains its own origin-time fit and filtered probability; there is no backward smoothing or later-data refit of historical rows.
+$$u^a_t=V_t w^a_t/P^a_{E_t},\qquad R_t=u_t^\top P_{E_{t+1}}/V_t-1.$$
 
-A pooled `HistGradientBoostingRegressor` forecasts the five non-cash assets using the predictors, six regime probabilities, and a categorical asset identifier. Loss is squared error, with early stopping disabled. Every Cartesian combination below was fitted at all 208 validation origins: 13,750 candidates and 2,860,000 fit calls. Within an otherwise identical parameter group, the five iteration checkpoints share boosting trees; equivalence to independent fits is tested. Return settings minimize pooled validation MSE; the 25 allocation combinations then maximize validation weekly excess-return Sharpe. Exact ties select the lowest permanent Cartesian candidate ID.
+Executed weights $w^{exec}_t$ are the normalized post-trade values. Realized one-way turnover is
+
+$$T_t=\tfrac12\lVert w^{exec}_t-w^-_t\rVert_1.$$
+
+Targets take effect only at execution. Holdings drift until the next trade, so overlapping four-week forecasts are not treated as independent four-week portfolio positions. The cash comparison uses the execution-to-next-execution BIL return $R^{BIL}_t$.
+
+## Statistical and mathematical models
+
+### Regime identification
+
+Three univariate Gaussian HMMs model VIX level, term-spread level, and four-week fractional PPI change. Each fit standardizes its origin-available history using the training-window mean and population standard deviation, with shorter history during initialization. EM estimation enforces the specified variance floor after every M step.
+
+For standardized observation $z_t$, transition matrix $A$, and state $s$, forward filtering computes
+
+$$\alpha_t(s)\propto p(z_t\mid s)\sum_j A_{js}\alpha_{t-1}(j),$$
+
+with normalization at every observation. States are ordered by ascending emission mean. Historical feature rows retain their own origin-time fit and filtered probabilities; no backward smoothing or later-data refit is applied to them. A higher-mean state describes its emission, rather than a common economic risk ranking across all three models.
+
+### Pooled return forecasting
+
+A pooled `HistGradientBoostingRegressor` estimates $\mu^a_t$, the four-week excess-return forecast, from the constructed predictors, all six HMM probability columns, and a categorical asset identifier. It pools the five non-cash assets, uses squared-error loss, and refits weekly on eligible rows. BIL's excess forecast is fixed at zero.
+
+### Covariance and constrained allocation
+
+Ledoit–Wolf estimates covariance from available weekly total returns across all six assets. Weekly covariance is multiplied by four to match the forecast horizon: $\Sigma_{4,t}=4\Sigma_{weekly,t}$.
+
+CVXPY/CLARABEL solves
+
+$$
+\begin{aligned}
+\max_w\quad &\mu_t^\top w-\frac{\lambda}{2}w^\top\Sigma_{4,t}w-\gamma\lVert w-w^F_t\rVert_1\\
+\text{subject to}\quad &\sum_a w_a=1,\qquad 0.05\leq w_a\leq0.50.
+\end{aligned}
+$$
+
+The penalty discourages changes from the Friday reference defined above. It is not deducted from NAV as a trading cost.
+
+### Evaluation
+
+Forecast error is the pooled mean squared error across scored origins and the five non-cash assets. Within each evaluation period, reindex scored weekly execution returns as $R_1,\ldots,R_n$ and define $Z_t=R_t-R^{BIL}_t$:
+
+- Annualized return: $[\prod_{t=1}^n(1+R_t)]^{52/n}-1$.
+- Annualized volatility: $\sqrt{52}\,s(R)$.
+- Excess-return Sharpe: $\sqrt{52}\,\overline{Z}/s(Z)$.
+- Maximum drawdown: $\min_t[W_t/\max_{j\leq t}W_j-1]$, where $W_0=1$ and $W_t=\prod_{i=1}^t(1+R_i)$.
+- Mean weekly turnover: $n^{-1}\sum_t T_t$.
+
+Here $s$ is the sample standard deviation. Each evaluation period is scored separately.
+
+## Configurations and benchmarks
+
+| Setting | Configuration |
+| --- | --- |
+| Research sample | 624 consecutive weeks beginning 28 July 2014; 52 observations per year for annualization. |
+| Splits | Warm-up 1–52; initial training 53–312; validation 313–520; locked test 521–624. |
+| Return-model training | Previous 260 calendar-origin weeks, starting no earlier than week 53; only mature targets. |
+| HMM history and states | Up to 260 observations; initialization after eight; two states with diagonal covariance. |
+| HMM estimation | Variance floor 0.001; `covars_prior=0`; `n_iter=200`; `tol=0.001`; up to 20 named seeded attempts for unusable fits. |
+| Boosting | Squared-error loss; `early_stopping=False`. |
+| Covariance history | Latest 260 available weekly total-return observations, including the current Friday. |
+| Initialization and accounting | Equal weights at the first validation Friday close; gross returns with zero transaction costs, slippage, and taxes. |
+
+### Search ranges and selected settings
 
 | Setting | Validation grid | Frozen choice |
 | --- | --- | --- |
@@ -53,26 +133,24 @@ A pooled `HistGradientBoostingRegressor` forecasts the five non-cash assets usin
 | Risk aversion $\lambda$ | 1–5, step 1 | 3 |
 | Turnover penalty $\gamma$ | 0.001–0.005, step 0.001 | 0.005 |
 
-Across all six assets, Ledoit–Wolf estimates covariance from the latest 260 available weekly total returns, including the current Friday; $\Sigma_{4,t}=4\Sigma_{weekly,t}$. CVXPY/CLARABEL solves
+All 13,750 return-model combinations were fitted at all 208 validation origins, giving 2,860,000 fit calls. Within an otherwise identical parameter group, the five iteration checkpoints share boosting trees; equivalence to independent fits is tested. The return model minimizes pooled validation MSE; the 25 allocation combinations then maximize validation excess-return Sharpe. Exact ties select the lowest permanent Cartesian candidate ID.
 
-$$\max_w\ \mu_t^\top w-\frac{\lambda}{2}w^\top\Sigma_{4,t}w-\gamma\lVert w-w^{Friday}_t\rVert_1,\qquad \sum_a w_a=1,\quad 0.05\leq w_a\leq0.50.$$
+Selection uses only outcomes realized before the first locked cutoff, 19 July 2024. Four-week targets from origins 517–520 are excluded, leaving 204 scored forecast origins. The origin-520 weekly holding interval also crosses that cutoff, leaving 207 scored validation returns; its executed holdings still carry into locked testing.
 
-$w^{Friday}_t$ is the existing holdings drifted to the decision cutoff; initial holdings are equal-weight. Targets are implemented only at the subsequent execution close. Adjusted-price units represent distribution-reinvested holdings, which drift between trades. Weekly portfolio returns span execution to next execution, rather than treating overlapping four-week forecasts as separate trades. Realized one-way turnover is $\frac12\lVert w^{executed}-w^{pretrade}\rVert_1$ at execution. The optimization penalty is not charged as a cost; transaction costs, slippage, and taxes are zero.
+`MASTER_SEED=42`. NumPy `SeedSequence` children use fixed component, forecast-origin, candidate, and repeated-fit IDs, independent of execution order. [The frozen configuration](artifacts/frozen_config.json) records selected settings, grids, seed reconstruction, HMM attempts, feature/allocation rules, and code, environment, and input provenance. Choices were fixed before locked testing and remain unchanged.
 
-Equal weight rebalances to six equal targets. Inverse volatility uses 52 available Friday total returns and sample standard deviations, normalizes reciprocal volatilities, then applies Euclidean projection onto the same bounded simplex. Both benchmarks use the strategy's execution schedule. BIL is also shown as a reference series.
+### Benchmarks
 
-`MASTER_SEED=42`. `SeedSequence` children use fixed component, forecast-origin, candidate, and repeated-fit IDs, independent of call order. The frozen configuration preserves their reconstruction rule, validation HMM attempts, all grids, selected settings, code/dependency hashes, and input provenance. The original frozen file remains unchanged; the separate completed-test receipt seals the assessment outputs.
+Equal weight rebalances to six equal targets. Inverse volatility uses reciprocal sample volatilities from 52 available Friday total returns, normalizes them, then applies Euclidean projection onto the allocator's feasible weight set. Both rebalance on the strategy's execution schedule and use the same holdings accounting. BIL is an additional cash reference.
 
 ## Results
-
-Validation settings were frozen before the first locked assessment. Selection excludes four-week labels from origins 517–520 because they mature beyond the first locked cutoff, 19 July 2024. Validation forecast MSE therefore uses 204 origins and 1,020 non-cash targets. The final validation holding interval, origin 520, ends beyond that cutoff and is also excluded from performance scoring. Its executed holdings still carry into the locked period. Locked testing scores all 104 forecasts and 104 weekly holding periods; final target prices extend to 10 August 2026.
 
 | Evaluation | Scored weekly return interval | Weekly returns | Non-cash forecast MSE |
 | --- | --- | ---: | ---: |
 | Validation | 27 July 2020–15 July 2024 | 207 | 0.001645741 |
 | Locked test | 22 July 2024–20 July 2026 | 104 | 0.001226289 |
 
-MSE uses squared return fractions. Annualized return is $[\prod_{t=1}^n(1+R_t)]^{52/n}-1$; annualized volatility is $\sqrt{52}\,s(R)$; Sharpe is $\sqrt{52}\,\overline{(R-r^{BIL})}/s(R-r^{BIL})$, with sample standard deviations. Maximum drawdown includes initial wealth one. Turnover below is the arithmetic mean of weekly one-way turnover.
+MSE uses squared return fractions: 1,020 scored non-cash targets in validation and 520 in locked testing. The final target endpoint is 10 August 2026; observations beyond research week 624 only complete already-issued forecasts and holdings.
 
 | Period | Portfolio | Ann. return | Ann. volatility | Excess Sharpe | Max. drawdown | Mean turnover |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
@@ -85,29 +163,19 @@ MSE uses squared return fractions. Annualized return is $[\prod_{t=1}^n(1+R_t)]^
 | Locked test | Inverse volatility | 7.50% | 3.65% | 0.88 | −2.92% | 0.37% |
 | Locked test | BIL cash | 4.17% | 0.11% | — | 0.00% | 0.00% |
 
-BIL's excess Sharpe is undefined because its excess return over itself is identically zero. On this locked period the strategy has higher gross return and Sharpe than both rebalanced benchmarks, but a larger drawdown than inverse volatility. One historical period does not establish persistent or net outperformance.
+BIL's excess Sharpe is undefined because its excess return over itself is zero. In this locked period the strategy has higher gross return and Sharpe than both rebalanced benchmarks, but a larger drawdown than inverse volatility.
 
-![Comparative cumulative performance, with validation and locked testing rebased separately](results/figures/performance.png)
+![Comparative cumulative performance across separate validation and locked-test periods](results/figures/performance.png)
 
-The panels start at wealth one independently; they do not bridge the excluded boundary holding period. The strategy's measured drawdown and volatility also differ materially between evaluation periods.
+Each panel starts at wealth one and omits the boundary-crossing validation interval. Strategy volatility and drawdown are lower in the locked period than in validation.
 
 ![Executed strategy weights across validation and locked testing](results/figures/allocations.png)
 
-The allocation chart shows executed targets held as steps for display, not intraperiod drifted weights. The dashed line marks the first locked decision. The strategy frequently holds substantial BIL exposure and changes its mix across the sample; statistical regimes do not establish economic causes.
-
-### Acceptance verification
-
-| Brief criterion | Verified evidence |
-| --- | --- |
-| Calendar and causal availability | All 624 research weeks, required session endpoints, vintage intervals, and mature training labels checked; 55 correctness tests pass. |
-| Exhaustive selection and frozen choices | All 13,750 return-model and 25 allocation combinations recorded with scored coverage; the original frozen seal and selected settings are unchanged. |
-| Feasible holdings and accounting | All 936 strategy/benchmark executions satisfy the bounds and investment constraint; pre-trade holdings, NAV, weekly returns, and half-L1 turnover reconcile. |
-| Benchmarks and separate evaluation | Equal-weight and inverse-volatility benchmarks, cash reference, forecast MSE, and every required portfolio measure are present for both periods; boundary exclusions remain explicit. |
-| Clean reproduction and deliverables | From recorded raw snapshots, an isolated replay rebuilt validation under frozen choices and ran `python run_pipeline.py` without a locked-test cache or receipt. All six scientific CSVs and both figures are byte-identical; see the [verification record](artifacts/reproduction_verification.json). |
+The chart shows executed targets as steps; holdings drift between executions. The dashed line marks the first locked decision. BIL takes a substantial share of the portfolio, and the asset mix shifts across the sample.
 
 ## Setup and reproduction
 
-Tested on Windows x86-64, CPython 3.12.14, with the complete pinned environment in [requirements.txt](requirements.txt). Core versions include NumPy 2.5.4, pandas 3.1.0, scikit-learn 1.9.1, hmmlearn 0.3.3, CVXPY 1.9.3, CLARABEL 0.11.1, joblib 1.6.0, and Matplotlib 3.11.2. Reuse the existing `.venv`; for a fresh setup:
+The tested environment is Windows x86-64 with CPython 3.12.14. [requirements.txt](requirements.txt) pins all direct and transitive runtime dependencies. Reuse the existing `.venv`; for a fresh setup:
 
 ```powershell
 py -3.12 -m venv .venv
@@ -118,11 +186,11 @@ $env:OPENBLAS_NUM_THREADS = '1'
 python -m pip check
 ```
 
-Supply the credential `FRED_API_KEY` through the process environment before data preparation. No credential value or `.env` file is distributed. The two thread-count variables above are reproducibility settings, not credentials.
+Supply `FRED_API_KEY` through the process environment before data preparation. No credential values or `.env` files are distributed. The thread variables above are reproducibility settings.
 
-Exact research reproduction requires the manifest-listed private raw snapshots and adjacent cache metadata restored under `data/raw/`. The data stage reconstructs the seven prepared tables and verifies cached responses. Without snapshots it attempts source retrieval, subject to provider access permissions; later provider revisions may change bytes, so this does not guarantee the frozen experiment. A public clone can inspect all published results and regenerate figures from the saved CSVs without the observation cache.
+Exact research reproduction requires the manifest-listed private snapshots and adjacent metadata restored under `data/raw/`. The data stage rebuilds seven prepared tables and checks cached responses. Without snapshots it attempts provider retrieval, subject to access permissions; revised downloads may fail the frozen input hashes. Published results and figure regeneration do not require the observation cache.
 
-The research entry point is `run_pipeline.py`. These research and verification commands have been tested in the recorded environment:
+The research entry point is `run_pipeline.py`. The following commands were tested in the recorded environment:
 
 ```powershell
 python run_pipeline.py --stage data
@@ -134,45 +202,57 @@ python -m unittest discover -s tests
 python -c "from regime_allocation.reproduction import verify_reproduction; verify_reproduction()"
 ```
 
-With the frozen artifact present, selection verifies and preserves its choices. The first test invocation performs 104 scheduled return refits using only mature labels, appends separately identified outputs, and writes a completion receipt. Later invocations, including the default full workflow, verify and reuse the completed assessment; they do not conduct another test or retune. Figures are a separate rendering of sealed tables and do not modify research code or choices. The retrieval manifest describes input preparation; the authoritative assessment state is `artifacts/locked_test_receipt.json` (`complete`).
+With the frozen artifact present, selection verifies and preserves its choices. The first test invocation performs 104 scheduled return refits, appends separately identified results, and writes [a completion receipt](artifacts/locked_test_receipt.json). Subsequent invocations, including the default workflow, verify and reuse that assessment. Figure rendering reads sealed tables without changing choices. The retrieval manifest describes input preparation; the receipt is the authoritative assessment state.
 
-The final command performs a clean computational replay rather than a cache check. It temporarily preserves the completed outputs, then creates an isolated workspace under ignored `data/`, copying raw snapshots, source code, frozen choices, and the original validation grid scores. No prepared tables, fitted-model caches, or test receipt are copied. It rebuilds the 208 selected validation fits and origin-time HMMs, verifies the frozen validation handoff, then executes `python run_pipeline.py` for the fresh 104-origin locked replay. It does not repeat grid search or use locked outcomes to revise choices. The original assessment and outputs remain untouched, and the temporary workspace is removed after verification.
+The final command performs a clean computational replay. It preserves completed outputs, creates an isolated workspace under ignored `data/`, and copies raw snapshots, source code, frozen choices, and validation grid scores. No prepared tables, fitted-model caches, or test receipt are copied. It rebuilds the 208 selected validation fits and origin-time HMMs, verifies the frozen handoff, then runs `python run_pipeline.py` for the 104-origin locked replay. Grid search is not repeated, and locked results cannot revise choices. The original assessment remains untouched; temporary files are removed after verification.
 
-The [clean-reproduction record](artifacts/reproduction_verification.json) includes input/code hashes, the pinned environment, fit counts, and per-file comparisons. Identifiers, timestamps, unavailable-value patterns, and table structure must agree exactly; floating-point differences must be at most $10^{-10}$ absolute. This run reproduced every scientific table and figure byte for byte, with zero observed numeric difference. Retrieval-manifest generation times and the isolated replay's completion timestamp are administrative and are not compared as scientific results.
+The [verification record](artifacts/reproduction_verification.json) reports byte-identical reproduction of all six scientific CSVs and both figures, with zero observed numeric difference. All 55 correctness tests pass, and accounting checks reconcile all 936 strategy/benchmark executions. One recorded warm-up HMM initialization required its next seed; no unresolved HMM or solver failures remain.
 
-CSV exports retain 17 significant digits. SHA-256 checks protect recorded input and result bytes; source-text hashes normalize line endings, and the frozen JSON uses a canonical seal. Numerical tolerances are $10^{-7}$ for weight bounds/sums, $10^{-10}$ absolute for self-financing NAV, and $10^{-12}$ for covariance symmetry/PSD. CLARABEL feasibility and gap tolerances are $10^{-10}$, with 500 iterations maximum. HMM convergence requires a final likelihood improvement below 0.001, allowing negative roundoff only down to $-10^{-7}$. Solver failures and unusable HMM fits stop reporting rather than substitute allocations or data.
+### Integrity and numerical tolerances
 
-## Repository contents
+CSV exports retain 17 significant digits. SHA-256 checks protect inputs and results; source hashes normalize line endings, and frozen JSON has a canonical seal. Clean comparisons require exact identifiers, timestamps, unavailable-value patterns, and table structure, with absolute numeric differences no greater than $10^{-10}$. Administrative generation/completion timestamps are excluded from scientific comparisons.
+
+| Check | Tolerance or limit |
+| --- | --- |
+| Weight bounds and sum | $10^{-7}$ |
+| Self-financing NAV | $10^{-10}$ absolute |
+| Covariance symmetry/PSD | $10^{-12}$ |
+| CLARABEL feasibility and gaps | $10^{-10}$; maximum 500 iterations |
+| HMM convergence | Final likelihood improvement in $[-10^{-7},\,0.001)$ |
+
+Unusable inputs and unresolved fit/solver failures stop reporting rather than substitute data or allocations.
+
+## Repository and outputs
 
 | Location | Contents |
 | --- | --- |
 | [README.md](README.md) | Methodology, results, attribution, and reproduction. |
 | [.gitignore](.gitignore), [.gitattributes](.gitattributes) | Private-data exclusions and reproducible text line endings. |
-| [requirements.txt](requirements.txt) | Tested pinned direct and transitive dependencies. |
-| [run_pipeline.py](run_pipeline.py) | Single research execution entry point. |
+| [requirements.txt](requirements.txt) | Tested pinned dependencies. |
+| [run_pipeline.py](run_pipeline.py) | Research execution entry point. |
 | [Package initialization](regime_allocation/__init__.py), [configuration](regime_allocation/config.py) | Shared paths, calendar, settings, grids, and named seeds. |
-| [Data retrieval](regime_allocation/data.py), [features](regime_allocation/features.py) | Snapshots, vintage availability, adjusted returns, predictors, and targets. |
-| [Models](regime_allocation/models.py), [portfolio](regime_allocation/portfolio.py) | Origin-time HMM features, pooled forecasts, exhaustive selection, optimization, and holdings. |
-| [Evaluation](regime_allocation/evaluation.py), [reporting](regime_allocation/reporting.py) | Separate period scoring, frozen/test integrity, and figures from sealed outputs. |
-| [Reproduction verifier](regime_allocation/reproduction.py) | Isolated cold replay of the frozen model and allocator, with preserved-output comparisons. |
-| [tests/test_project.py](tests/test_project.py) | Independent mathematical, causal, timing, accounting, seed, and rendering-data checks. |
-| [Frozen configuration](artifacts/frozen_config.json) | Selected settings, grids, seed mappings, source/code provenance, and validation hashes. |
-| [Locked-test receipt](artifacts/locked_test_receipt.json) | Completion state, 104 return fits, frozen seal, and final table hashes. |
-| [Reproduction verification](artifacts/reproduction_verification.json) | Clean-run environment, input provenance, preserved assessment, and exact/numeric comparisons. |
-| [Retrieval manifest](results/retrieval_manifest.json) | Input coverage, source terms/attribution, exact snapshot hashes, and reconstruction. |
+| [Data retrieval](regime_allocation/data.py), [features](regime_allocation/features.py) | Snapshots, availability, adjusted returns, predictors, and targets. |
+| [Models](regime_allocation/models.py), [portfolio](regime_allocation/portfolio.py) | Causal HMM features, pooled forecasts, selection, optimization, and holdings. |
+| [Evaluation](regime_allocation/evaluation.py), [reporting](regime_allocation/reporting.py) | Separate-period scoring, integrity checks, and figures. |
+| [Reproduction verifier](regime_allocation/reproduction.py) | Isolated frozen-choice replay and preserved-output comparisons. |
+| [tests/test_project.py](tests/test_project.py) | Mathematical, causal, timing, accounting, seed, and reproduction checks. |
+| [Frozen configuration](artifacts/frozen_config.json) | Choices, grids, seed mappings, provenance, and validation hashes. |
+| [Locked-test receipt](artifacts/locked_test_receipt.json) | Assessment state, 104 return fits, frozen seal, and final table hashes. |
+| [Reproduction verification](artifacts/reproduction_verification.json) | Clean-run environment, provenance, and file comparisons. |
+| [Retrieval manifest](results/retrieval_manifest.json) | Input coverage, attribution/terms, snapshot hashes, and reconstruction. |
 | [Selection](results/selection.csv) | Scores, coverage, and choices for all 13,775 grid combinations. |
-| [Weekly forecasts](results/weekly_forecasts.csv) | Forecasts, realized targets, training maturity, and decision/execution/realization times. |
-| [Regime probabilities](results/regime_probabilities.csv) | Filtered probabilities, ordered means, fit windows, seeds, and convergence diagnostics. |
-| [Weekly allocations](results/weekly_allocations.csv) | Strategy/benchmark targets, reference/pre-trade/executed weights, units, NAV, turnover, and solver diagnostics. |
+| [Weekly forecasts](results/weekly_forecasts.csv) | Forecasts, targets, maturity, and decision/execution/realization times. |
+| [Regime probabilities](results/regime_probabilities.csv) | Filtered probabilities, ordered means, windows, seeds, and convergence. |
+| [Weekly allocations](results/weekly_allocations.csv) | Targets, reference/pre-trade/executed weights, units, NAV, turnover, and solver diagnostics. |
 | [Weekly returns](results/weekly_returns.csv), [performance](results/performance.csv) | Separate-period strategy, benchmark, and cash returns and comparative measures. |
-| [Performance figure](results/figures/performance.png), [allocation figure](results/figures/allocations.png) | Cumulative performance and executed strategy weights across both evaluation periods. |
+| [Performance figure](results/figures/performance.png), [allocation figure](results/figures/allocations.png) | Cumulative performance and executed weights across both periods. |
 
 ## Assumptions and limitations
 
-- Four-week labels overlap. MSE is descriptive and does not treat those observations as independent evidence; portfolio performance uses weekly holdings returns.
-- Hyperparameters were selected from a large validation grid. Locked results cover only one subsequent historical sample, with no further selection based on them.
-- BIL is an ETF proxy, not a guaranteed risk-free instrument. Gross results omit commissions, spread, market impact, financing details, taxes, and execution uncertainty.
-- Four-times-weekly covariance approximates horizon risk. Gaussian two-state models and 260-week estimation windows are modeling assumptions, not established economic mechanisms.
-- Historical market-data revision vintages and exact macro intraday release times are unavailable. Exact snapshots and the conservative macro availability rule improve traceability but cannot remove those source limitations.
-- Bounds apply at execution; holdings can drift outside them between trades. The performance comparison omits the boundary-crossing validation interval and rebases each evaluation period separately.
-- Exact fresh reconstruction depends on access to the original private inputs and pinned numerical environment. Provider observations are not redistributed, and new downloads may not match recorded hashes.
+- Four-week targets overlap. Their MSE is descriptive, rather than evidence from independent observations; portfolio performance uses weekly holdings returns.
+- A large validation grid selected the settings. The single locked historical sample does not establish persistent or net outperformance.
+- BIL is an ETF cash proxy, not a guaranteed risk-free instrument. Gross results omit commissions, spread, market impact, financing details, taxes, and execution uncertainty.
+- Four-times-weekly covariance, Gaussian two-state regimes, and rolling estimation windows are modeling assumptions. Statistical state labels do not establish economic mechanisms.
+- Historical market-data revision vintages and exact macro intraday release times are unavailable. Current Yahoo history is snapshotted; conservative macro timing cannot remove every source limitation.
+- Bounds apply at execution and can be breached by subsequent drift. Evaluation periods are rebased separately, with the boundary-crossing validation interval omitted.
+- Exact reconstruction depends on the original private inputs and pinned environment. Provider observations are not redistributed, and new downloads may not match recorded hashes.
